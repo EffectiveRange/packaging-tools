@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+
+# SPDX-FileCopyrightText: 2024 Ferenc Nandor Janky <ferenj@effective-range.com>
+# SPDX-FileCopyrightText: 2024 Attila Gombos <attila.gombos@effective-range.com>
+# SPDX-License-Identifier: MIT
+
+import glob
+import os
+import re
+import shutil
+import sys
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, Namespace
+from os.path import abspath
+from pathlib import Path
+from typing import Generator
+
+sys.path.append(str(Path(os.path.dirname(__file__)).resolve().parent))
+
+from common.common import check_workspace, run_command
+
+
+def main() -> None:
+    arguments = _get_arguments()
+
+    workspace_dir = abspath(arguments.workspace_dir)
+
+    check_workspace(workspace_dir)
+
+    output_dir = f'{workspace_dir}/dist'
+
+    if arguments.output_dir:
+        output_dir = abspath(arguments.output_dir)
+
+    results = create_sources(arguments, workspace_dir, output_dir)
+
+    build_dir = f'{output_dir}/{next(results)}'
+
+    results = build_package(arguments, workspace_dir, build_dir)
+
+    for result in results:
+        print(f'{output_dir}/{result}')
+
+
+def create_sources(arguments: Namespace, workspace_dir: str, output_dir: str) -> Generator[str, None, None]:
+    package_name = extract_package_name(workspace_dir)
+
+    command_arguments = ['--package3', package_name, '--dist-dir', output_dir, '--with-dh-virtualenv', '--compat', '10']
+
+    if arguments.arguments:
+        command_arguments.extend(arguments.arguments.split())
+
+    if arguments.service_file:
+        command_arguments.append('--with-dh-systemd')
+
+    command = [arguments.python_bin, 'setup.py', '--command-packages=stdeb.command', 'sdist_dsc', *command_arguments]
+
+    return run_command(workspace_dir, command, r'copying setup.py -> (.+)')
+
+
+def extract_package_name(workspace_dir: str) -> str:
+    with open(f'{workspace_dir}/setup.py', 'r') as file:
+        setup_code = file.read()
+
+    pattern = r'name\s*=\s*[\'"]([^\'"]+)[\'"]'
+
+    match = re.search(pattern, setup_code)
+
+    if match:
+        return match.group(1)
+    else:
+        return workspace_dir.split('/')[-1]
+
+
+def build_package(arguments: Namespace, workspace_dir: str, build_dir: str) -> Generator[str, None, None]:
+    debian_dir = f'{build_dir}/debian'
+
+    if arguments.service_file:
+        if arguments.service_file.startswith('/'):
+            service_file = arguments.service_file
+        else:
+            service_file = f'{workspace_dir}/{arguments.service_file}'
+
+        shutil.copy(service_file, debian_dir)
+
+    if arguments.extra_files:
+        if arguments.extra_files.startswith('/'):
+            extra_files = arguments.extra_files
+        else:
+            extra_files = f'{workspace_dir}/{arguments.extra_files}'
+
+        for file in glob.glob(extra_files):
+            shutil.copy(file, debian_dir)
+
+    command = ['dpkg-buildpackage', '-us', '-uc', '-ui', '-b']
+
+    return run_command(build_dir, command, r".*'\.\./(.+\.deb)'")
+
+
+def _get_arguments() -> Namespace:
+    parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
+    parser.add_argument('-a', '--arguments', help='extra arguments passed to stdeb')
+    parser.add_argument('-p', '--python-bin', help='python executable to use', default='python3')
+    parser.add_argument('-s', '--service-file', help='service unit file path')
+    parser.add_argument('-e', '--extra-files', help='add extra files into debian folder before build')
+    parser.add_argument('-o', '--output-dir', help='package output directory')
+    parser.add_argument('workspace_dir', help='workspace directory where setup.py is located')
+    return parser.parse_args()
+
+
+if __name__ == '__main__':
+    main()
