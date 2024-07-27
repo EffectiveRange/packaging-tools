@@ -28,21 +28,10 @@ def main() -> None:
 
     configuration = None
 
-    if exists(config_file):
-        parser = ConfigParser()
-        parser.read(config_file)
-
-        if parser.has_section('pack-python'):
-            configuration = dict(parser['pack-python'])
-
-            packaging_options = configuration.get('packaging', '').split()
-
-            if arguments.all:
-                packaging = packaging_options
-            else:
-                default = configuration.get('default', DEFAULT_PACKAGING)
-                if default in packaging_options:
-                    packaging = [default]
+    if arguments.scripts:
+        packaging = arguments.scripts.split()
+    else:
+        configuration, packaging = parse_config(arguments, config_file, packaging)
 
     scripts_dir = f'{abspath(dirname(__file__))}/scripts'
 
@@ -70,10 +59,33 @@ def main() -> None:
                     print(result.stdout.rstrip('\n'))
 
 
+def parse_config(arguments, config_file, packaging) -> tuple[dict, list[str]]:
+    configuration = None
+
+    if exists(config_file):
+        parser = ConfigParser()
+        parser.read(config_file)
+
+        if parser.has_section('pack-python'):
+            configuration = dict(parser['pack-python'])
+
+            packaging_options = configuration.get('packaging', '').split()
+
+            if arguments.all:
+                packaging = packaging_options
+            else:
+                default = configuration.get('default', DEFAULT_PACKAGING)
+                packaging = [default]
+
+    return configuration, packaging
+
+
 def _get_arguments() -> Namespace:
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-a', '--all', help='run all packaging scripts', action=BooleanOptionalAction, default=False)
-    parser.add_argument('-c', '--config-file', help='config file path relative to the workspace directory',
+    parser.add_argument('-s', '--scripts', help='space separated packaging scripts to run')
+    parser.add_argument('-a', '--all', help='run all configured packaging scripts', action=BooleanOptionalAction,
+                        default=False)
+    parser.add_argument('-c', '--config-file', help='config file path',
                         default='setup.cfg')
     parser.add_argument('-p', '--python-bin', help='python executable to use', default='python3')
     parser.add_argument('-o', '--output-dir', help='package output directory')

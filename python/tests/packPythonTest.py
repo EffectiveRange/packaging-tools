@@ -25,6 +25,18 @@ class PackPythonTest(TestCase):
         self.assertEqual(0, result.returncode)
         self.assertEqual(f'{TEST_PROJECT_ROOT}/dist/python3-test-project_1.0.0_all.deb\n', result.stdout)
 
+    def test_pack_python_when_packaging_specified(self):
+        # Given
+        command = [f'{RESOURCE_ROOT}/pack_python', TEST_PROJECT_ROOT, '-s', 'wheel fpm-deb']
+
+        # When
+        result = run_command(command)
+
+        # Then
+        self.assertEqual(0, result.returncode)
+        self.assertEqual(f'{TEST_PROJECT_ROOT}/dist/test_project-1.0.0-py3-none-any.whl\n'
+                         f'{TEST_PROJECT_ROOT}/dist/python3-test-project_1.0.0_all.deb\n', result.stdout)
+
     def test_pack_python_when_packaging_all_and_no_output_dir_specified(self):
         # Given
         command = [f'{RESOURCE_ROOT}/pack_python', TEST_PROJECT_ROOT, '--all']
