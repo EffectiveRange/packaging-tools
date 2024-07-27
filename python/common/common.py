@@ -24,6 +24,7 @@ def run_command(workspace_dir: str, command: str | list[str], matcher: str,
     result = subprocess.run(command, cwd=workspace_dir, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     if result.returncode:
+        print(result.stderr, file=sys.stderr)
         exit(result.returncode)
 
     output = result.stdout.split('\n')
