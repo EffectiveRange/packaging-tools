@@ -9,6 +9,7 @@ import subprocess
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, Namespace, BooleanOptionalAction
 from configparser import ConfigParser
 from os.path import exists, dirname, abspath
+from typing import Optional
 
 from common.common import check_workspace
 
@@ -24,14 +25,12 @@ def main() -> None:
 
     config_file = f'{workspace_dir}/{arguments.config_file}'
 
-    packaging = [DEFAULT_PACKAGING]
-
     configuration = None
 
     if arguments.scripts:
         packaging = arguments.scripts.split()
     else:
-        configuration, packaging = parse_config(arguments, config_file, packaging)
+        configuration, packaging = parse_config(arguments, config_file)
 
     scripts_dir = f'{abspath(dirname(__file__))}/scripts'
 
@@ -59,8 +58,9 @@ def main() -> None:
                     print(result.stdout.rstrip('\n'))
 
 
-def parse_config(arguments, config_file, packaging) -> tuple[dict, list[str]]:
+def parse_config(arguments: Namespace, config_file: str) -> tuple[Optional[dict[str, str]], list[str]]:
     configuration = None
+    packaging = [DEFAULT_PACKAGING]
 
     if exists(config_file):
         parser = ConfigParser()

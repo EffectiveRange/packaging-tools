@@ -6,7 +6,7 @@ import re
 import subprocess
 import sys
 from os.path import exists
-from typing import Generator
+from typing import Generator, Union
 
 
 def check_workspace(workspace_dir: str) -> None:
@@ -19,7 +19,7 @@ def check_workspace(workspace_dir: str) -> None:
         exit(2)
 
 
-def run_command(workspace_dir: str, command: str | list[str], matcher: str,
+def run_command(workspace_dir: str, command: Union[str, list[str]], matcher: str,
                 first_match_only: bool = True) -> Generator[str, None, None]:
     result = subprocess.run(command, cwd=workspace_dir, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
