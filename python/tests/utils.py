@@ -15,6 +15,17 @@ def delete_directory(directory: str) -> None:
         shutil.rmtree(directory)
 
 
+def create_directory(directory: str) -> None:
+    if not os.path.isdir(directory):
+        os.makedirs(directory, exist_ok=True)
+
+
+def create_file(file: str, content: str) -> None:
+    create_directory(os.path.dirname(file))
+    with open(file, 'w') as f:
+        f.write(content)
+
+
 def run_command(command: list[str]) -> subprocess.CompletedProcess[str]:
     result = subprocess.run(command, text=True, stdout=subprocess.PIPE)
 

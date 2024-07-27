@@ -47,7 +47,7 @@ options:
                         space separated packaging scripts to run (default: None)
   -a, --all, --no-all   run all configured packaging scripts (default: False)
   -c CONFIG_FILE, --config-file CONFIG_FILE
-                        config file path (default: setup.cfg)
+                        config file path relative to workspace directory (default: setup.cfg)
   -p PYTHON_BIN, --python-bin PYTHON_BIN
                         python executable to use (default: python3)
   -o OUTPUT_DIR, --output-dir OUTPUT_DIR

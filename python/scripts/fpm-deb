@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
-from common.common import check_workspace, run_command
+from common.common import check_workspace, run_command, get_absolute_path
 
 
 def main() -> None:
@@ -41,8 +41,7 @@ def main() -> None:
     results = run_command(workspace_dir, command, r'.*"(.+\.deb)"')
 
     for result in results:
-        if not result.startswith('/'):
-            result = output_dir if arguments.output_dir else f'{workspace_dir}/{result}'
+        result = get_absolute_path(result, output_dir)
         print(result)
 
 

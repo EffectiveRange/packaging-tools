@@ -33,7 +33,7 @@ def main() -> None:
 
     for result in results:
         if not result.startswith('/'):
-            result = output_dir if arguments.output_dir else f'{workspace_dir}/{result}'
+            result = f'{output_dir}/{result}' if arguments.output_dir else f'{workspace_dir}/{result}'
         print(result)
 
 

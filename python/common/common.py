@@ -35,3 +35,10 @@ def run_command(workspace_dir: str, command: Union[str, list[str]], matcher: str
             yield match.group(1)
             if first_match_only:
                 break
+
+
+def get_absolute_path(path: str, base_path: str) -> str:
+    if path.startswith('/'):
+        return path
+    else:
+        return f'{base_path}/{path}'

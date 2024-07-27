@@ -4,7 +4,7 @@ import unittest
 from unittest import TestCase
 
 from utils import TEST_PROJECT_ROOT, RESOURCE_ROOT, TEST_RESOURCE_ROOT, delete_directory, TEST_FILE_SYSTEM_ROOT, \
-    run_command
+    run_command, create_file
 
 
 class PackPythonTest(TestCase):
@@ -24,6 +24,21 @@ class PackPythonTest(TestCase):
         # Then
         self.assertEqual(0, result.returncode)
         self.assertEqual(f'{TEST_PROJECT_ROOT}/dist/python3-test-project_1.0.0_all.deb\n', result.stdout)
+
+    def test_pack_python_when_packaging_default_and_config_file_specified(self):
+        # Given
+        create_file(f'{TEST_FILE_SYSTEM_ROOT}/tmp/setup.cfg',
+                    '[pack-python]\n'
+                    'default = dh-virtualenv\n')
+
+        command = [f'{RESOURCE_ROOT}/pack_python', TEST_PROJECT_ROOT, '-c', f'{TEST_FILE_SYSTEM_ROOT}/tmp/setup.cfg']
+
+        # When
+        result = run_command(command)
+
+        # Then
+        self.assertEqual(0, result.returncode)
+        self.assertEqual(f'{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb\n', result.stdout)
 
     def test_pack_python_when_packaging_specified(self):
         # Given

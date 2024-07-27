@@ -16,7 +16,7 @@ from typing import Generator
 
 sys.path.append(str(Path(os.path.dirname(__file__)).resolve().parent))
 
-from common.common import check_workspace, run_command
+from common.common import check_workspace, run_command, get_absolute_path
 
 
 def main() -> None:
@@ -75,18 +75,11 @@ def build_package(arguments: Namespace, workspace_dir: str, build_dir: str) -> G
     debian_dir = f'{build_dir}/debian'
 
     if arguments.service_file:
-        if arguments.service_file.startswith('/'):
-            service_file = arguments.service_file
-        else:
-            service_file = f'{workspace_dir}/{arguments.service_file}'
-
+        service_file = get_absolute_path(arguments.service_file, workspace_dir)
         shutil.copy(service_file, debian_dir)
 
     if arguments.extra_files:
-        if arguments.extra_files.startswith('/'):
-            extra_files = arguments.extra_files
-        else:
-            extra_files = f'{workspace_dir}/{arguments.extra_files}'
+        extra_files = get_absolute_path(arguments.extra_files, workspace_dir)
 
         for file in glob.glob(extra_files):
             shutil.copy(file, debian_dir)

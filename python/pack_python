@@ -11,7 +11,7 @@ from configparser import ConfigParser
 from os.path import exists, dirname, abspath
 from typing import Optional
 
-from common.common import check_workspace
+from common.common import check_workspace, get_absolute_path
 
 DEFAULT_PACKAGING = 'wheel'
 
@@ -23,7 +23,7 @@ def main() -> None:
 
     check_workspace(workspace_dir)
 
-    config_file = f'{workspace_dir}/{arguments.config_file}'
+    config_file = get_absolute_path(arguments.config_file, workspace_dir)
 
     configuration = None
 
@@ -85,7 +85,7 @@ def _get_arguments() -> Namespace:
     parser.add_argument('-s', '--scripts', help='space separated packaging scripts to run')
     parser.add_argument('-a', '--all', help='run all configured packaging scripts', action=BooleanOptionalAction,
                         default=False)
-    parser.add_argument('-c', '--config-file', help='config file path',
+    parser.add_argument('-c', '--config-file', help='config file path relative to workspace directory',
                         default='setup.cfg')
     parser.add_argument('-p', '--python-bin', help='python executable to use', default='python3')
     parser.add_argument('-o', '--output-dir', help='package output directory')
