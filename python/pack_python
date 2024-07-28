@@ -9,7 +9,6 @@ import subprocess
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, Namespace, BooleanOptionalAction
 from configparser import ConfigParser
 from os.path import exists, dirname, abspath
-from typing import Optional
 
 from common.common import check_workspace, get_absolute_path
 
@@ -25,41 +24,43 @@ def main() -> None:
 
     config_file = get_absolute_path(arguments.config_file, workspace_dir)
 
-    configuration = None
+    configuration: dict[str, str] = {}
 
     if arguments.scripts:
         packaging = arguments.scripts.split()
     else:
-        configuration, packaging = parse_config(arguments, config_file)
+        configuration, packaging = _parse_config(arguments, config_file)
 
     scripts_dir = f'{abspath(dirname(__file__))}/scripts'
 
     for script in packaging:
         script_file = f'{scripts_dir}/{script}'
-        if exists(script_file):
 
+        if exists(script_file):
             command = [script_file, workspace_dir]
 
-            if configuration:
-                arg_string = configuration.get(script)
-                if arg_string:
-                    command.extend(split_arguments(arg_string))
+            if arg_string := configuration.get(script):
+                command.extend(_split_arguments(arg_string))
 
-            if arguments.python_bin:
-                command.extend(['-p', arguments.python_bin])
-
-            if arguments.output_dir:
-                command.extend(['-o', arguments.output_dir])
-
-            result = subprocess.run(command, text=True, stdout=subprocess.PIPE)
-
-            if not result.returncode:
-                if result.stdout:
-                    print(result.stdout.rstrip('\n'))
+            _run_script(arguments, command)
 
 
-def parse_config(arguments: Namespace, config_file: str) -> tuple[Optional[dict[str, str]], list[str]]:
-    configuration = None
+def _run_script(arguments: Namespace, command: list[str]) -> None:
+    if arguments.python_bin:
+        command.extend(['-p', arguments.python_bin])
+
+    if arguments.output_dir:
+        command.extend(['-o', arguments.output_dir])
+
+    result = subprocess.run(command, text=True, stdout=subprocess.PIPE)
+
+    if not result.returncode:
+        if result.stdout:
+            print(result.stdout.rstrip('\n'))
+
+
+def _parse_config(arguments: Namespace, config_file: str) -> tuple[dict[str, str], list[str]]:
+    configuration = {}
     packaging = [DEFAULT_PACKAGING]
 
     if exists(config_file):
@@ -93,7 +94,7 @@ def _get_arguments() -> Namespace:
     return parser.parse_args()
 
 
-def split_arguments(arg_string: str) -> list[str]:
+def _split_arguments(arg_string: str) -> list[str]:
     # Split on spaces, but allow spaces inside double quotes
     pattern = r'\"(.*?)\"|(\S+)'
     matches = re.findall(pattern, arg_string)

@@ -31,18 +31,18 @@ def main() -> None:
     if arguments.output_dir:
         output_dir = abspath(arguments.output_dir)
 
-    results = create_sources(arguments, workspace_dir, output_dir)
+    results = _create_sources(arguments, workspace_dir, output_dir)
 
     build_dir = f'{output_dir}/{next(results)}'
 
-    results = build_package(arguments, workspace_dir, build_dir)
+    results = _build_package(arguments, workspace_dir, build_dir)
 
     for result in results:
         print(f'{output_dir}/{result}')
 
 
-def create_sources(arguments: Namespace, workspace_dir: str, output_dir: str) -> Generator[str, None, None]:
-    package_name = extract_package_name(workspace_dir)
+def _create_sources(arguments: Namespace, workspace_dir: str, output_dir: str) -> Generator[str, None, None]:
+    package_name = _extract_package_name(workspace_dir)
 
     command_arguments = ['--package3', package_name, '--dist-dir', output_dir, '--with-dh-virtualenv', '--compat', '10']
 
@@ -57,7 +57,7 @@ def create_sources(arguments: Namespace, workspace_dir: str, output_dir: str) ->
     return run_command(workspace_dir, command, r'copying setup.py -> (.+)')
 
 
-def extract_package_name(workspace_dir: str) -> str:
+def _extract_package_name(workspace_dir: str) -> str:
     with open(f'{workspace_dir}/setup.py', 'r') as file:
         setup_code = file.read()
 
@@ -71,7 +71,7 @@ def extract_package_name(workspace_dir: str) -> str:
         return workspace_dir.split('/')[-1]
 
 
-def build_package(arguments: Namespace, workspace_dir: str, build_dir: str) -> Generator[str, None, None]:
+def _build_package(arguments: Namespace, workspace_dir: str, build_dir: str) -> Generator[str, None, None]:
     debian_dir = f'{build_dir}/debian'
 
     if arguments.service_file:
