@@ -1,8 +1,20 @@
 name: Python test
 
 on:
+  push:
+    branches: main
+    tags: v*.*.*
+
   pull_request:
     branches: [ "main" ]
+    types:
+      - synchronize
+      - opened
+      - reopened
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.sha }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -32,3 +44,16 @@ jobs:
           mypy
           flake8
           pytest
+      - name: Create Release Bundle
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          ./build.sh
+      - 
+        name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+          files: |
+            dist/*.tar.gz
