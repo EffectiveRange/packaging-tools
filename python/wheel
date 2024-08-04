@@ -4,12 +4,8 @@
 # SPDX-FileCopyrightText: 2024 Attila Gombos <attila.gombos@effective-range.com>
 # SPDX-License-Identifier: MIT
 
-import sys
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, Namespace
-from os.path import abspath, dirname
-from pathlib import Path
-
-sys.path.insert(0, dirname(abspath(__file__)))
+from os.path import abspath
 
 from common import check_workspace, run_command
 
@@ -21,37 +17,29 @@ def main() -> None:
 
     check_workspace(workspace_dir)
 
-    command = [arguments.python_bin, "setup.py", "bdist_wheel"]
+    command = [arguments.python_bin, 'setup.py', 'bdist_wheel']
 
-    output_dir = f"{workspace_dir}/dist"
+    output_dir = f'{workspace_dir}/dist'
 
     if arguments.output_dir:
         output_dir = abspath(arguments.output_dir)
-        command.extend(["--dist-dir", output_dir])
+        command.extend(['--dist-dir', output_dir])
 
     results = run_command(workspace_dir, command, r".*'(.+\.whl)'")
 
     for result in results:
-        if not result.startswith("/"):
-            result = (
-                f"{output_dir}/{result}"
-                if arguments.output_dir
-                else f"{workspace_dir}/{result}"
-            )
+        if not result.startswith('/'):
+            result = f'{output_dir}/{result}' if arguments.output_dir else f'{workspace_dir}/{result}'
         print(result)
 
 
 def _get_arguments() -> Namespace:
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-        "-p", "--python-bin", help="python executable to use", default="python3"
-    )
-    parser.add_argument("-o", "--output-dir", help="package output directory")
-    parser.add_argument(
-        "workspace_dir", help="workspace directory where setup.py is located"
-    )
+    parser.add_argument('-p', '--python-bin', help='python executable to use', default='python3')
+    parser.add_argument('-o', '--output-dir', help='package output directory')
+    parser.add_argument('workspace_dir', help='workspace directory where setup.py is located')
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
