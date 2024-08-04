@@ -3,9 +3,12 @@
 # SPDX-License-Identifier: MIT
 
 import re
-import subprocess
 import sys
+from collections import deque
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from os.path import exists
+from subprocess import PIPE, Popen
 from typing import Generator, Union
 
 
@@ -21,20 +24,39 @@ def check_workspace(workspace_dir: str) -> None:
 
 def run_command(workspace_dir: str, command: Union[str, list[str]], matcher: str,
                 first_match_only: bool = True) -> Generator[str, None, None]:
-    result = subprocess.run(command, cwd=workspace_dir, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    command_line = command if isinstance(command, str) else ' '.join(command)
 
-    if result.returncode:
-        print(result.stderr, file=sys.stderr)
-        exit(result.returncode)
+    print(f'Running command "{command_line}"', file=sys.stderr)
 
-    output = result.stdout.split('\n')
-    pattern = re.compile(matcher)
+    with Popen(command_line, cwd=workspace_dir, shell=True, text=True, stdout=PIPE, stderr=PIPE) as process:
+        pattern = re.compile(matcher)
+        output: list[str] = []
 
-    for line in output:
-        if match := pattern.match(line):
-            yield match.group(1)
+        with ThreadPoolExecutor(2) as pool:
+            exhaust = partial(pool.submit, partial(deque, maxlen=0))
+            if process.stdout:
+                exhaust(filter(line, pattern, output) for line in process.stdout)
+            if process.stderr:
+                exhaust(print(line[:-1], file=sys.stderr) for line in process.stderr)
+
+        return_code = process.poll()
+
+        if return_code:
+            exit(return_code)
+
+        for line in output:
+            yield line
             if first_match_only:
                 break
+
+
+def filter(line: str, pattern: re.Pattern[str], output: list[str]) -> str:
+    print(line[:-1], file=sys.stderr)
+
+    if match := pattern.match(line):
+        output.append(match.group(1))
+
+    return line
 
 
 def get_absolute_path(path: str, base_path: str) -> str:
