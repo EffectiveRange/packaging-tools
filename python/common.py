@@ -26,7 +26,7 @@ def run_command(workspace_dir: str, command: Union[str, list[str]], matcher: str
                 first_match_only: bool = True) -> Generator[str, None, None]:
     command_line = command if isinstance(command, str) else ' '.join(command)
 
-    print(f'Running command "{command_line}"', file=sys.stderr)
+    print(f"Running command '{command_line}' with output matcher {matcher}", file=sys.stderr)
 
     with Popen(command_line, cwd=workspace_dir, shell=True, text=True, stdout=PIPE, stderr=PIPE) as process:
         pattern = re.compile(matcher)
@@ -42,6 +42,7 @@ def run_command(workspace_dir: str, command: Union[str, list[str]], matcher: str
         return_code = process.poll()
 
         if return_code:
+            print(f"Command '{command_line}' failed with return code {return_code}", file=sys.stderr)
             exit(return_code)
 
         for line in output:

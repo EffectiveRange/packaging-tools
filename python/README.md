@@ -12,8 +12,36 @@ Packaging scripts to create installable packages from Python projects.
 
 ## Overview
 
-The main entry point is `pack_python` script. It is calling the packaging-specific scripts and passing arguments to them.
+The main entry point is `pack_python` script.
+It is calling the packaging-specific scripts and passing arguments to them.
 Also parses the configuration from the target project's `setup.cfg` file if there is any.
+
+## Requirements
+
+### python
+
+```bash
+$ sudo apt-get install python3 python3-pip
+```
+
+### wheel
+
+```bash
+$ pip install wheel
+```
+
+### fpm
+
+```bash
+$ sudo apt-get install ruby ruby-dev rubygems build-essential
+$ sudo gem install -N fpm
+```
+
+### dh-virtualenv
+
+```bash
+sudo apt-get install debhelper devscripts equivs dh-virtualenv dh-python python3-virtualenv python3-all python3-stdeb
+```
 
 ## Configuration
 
@@ -78,19 +106,19 @@ $ ./pack_python tests/test-project --scripts "wheel fpm-deb"
 /home/attilagombos/EffectiveRange/packaging-tools/python/tests/test-project/dist/python3-test-project_1.0.0_all.deb
 ```
 
-## Scripts
+## Packaging scripts
 
 - `wheel` - Create binary wheel package
 - `fpm-deb` - Create debian .deb package using [FPM](https://fpm.readthedocs.io/en/latest/index.html)
 - `dh-virtualenv` - Create debian .deb package using [dh-virtualenv](https://dh-virtualenv.readthedocs.io/en/latest/)
-and [stdeb](https://github.com/astraw/stdeb)
+  and [stdeb](https://github.com/astraw/stdeb)
 
 ### wheel
 
 The `wheel` script is using the `bdist_wheel` setuptools command to create a binary wheel package.
 
 ```bash
-$ scripts/wheel --help
+$ wheel --help
 usage: wheel [-h] [-p PYTHON_BIN] [-o OUTPUT_DIR] workspace_dir
 
 positional arguments:
@@ -109,7 +137,7 @@ options:
 The `fpm-deb` script is using the `fpm` to create a debian .deb package.
 
 ```bash
-$ scripts/fpm-deb --help
+$ fpm-deb --help
 usage: fpm-deb [-h] [-a ARGUMENTS] [-p PYTHON_BIN] [-o OUTPUT_DIR] workspace_dir
 
 positional arguments:
@@ -131,7 +159,7 @@ The `dh-virtualenv` script is using `stdeb` and `dh-virtualenv` to create a debi
 with all Python dependecies pre-installed in a virtual environment.
 
 ```bash
-$ scripts/dh-virtualenv --help
+$ dh-virtualenv --help
 usage: dh-virtualenv [-h] [-a ARGUMENTS] [-p PYTHON_BIN] [-s SERVICE_FILE] [-e EXTRA_FILES] [-o OUTPUT_DIR] workspace_dir
 
 positional arguments:
