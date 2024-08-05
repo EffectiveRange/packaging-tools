@@ -23,7 +23,7 @@ def main() -> None:
         '-t', 'deb',
         '--python-bin', arguments.python_bin,
         '--python-package-name-prefix', 'python3',
-        '--log', 'error',
+        '--log', 'info',
         '-f',
     ]
 
