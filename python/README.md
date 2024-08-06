@@ -110,7 +110,7 @@ $ ./pack_python tests/test-project --scripts "wheel fpm-deb"
 
 - `wheel` - Create binary wheel package
 - `fpm-deb` - Create debian .deb package using [FPM](https://fpm.readthedocs.io/en/latest/index.html)
-- `dh-virtualenv` - Create debian .deb package using [dh-virtualenv](https://dh-virtualenv.readthedocs.io/en/latest/)
+- `dh-virtualenv` - Create debian .deb package using [dh-virtualenv](https://pack_dh-virtualenv.readthedocs.io/en/latest/)
   and [stdeb](https://github.com/astraw/stdeb)
 
 ### wheel

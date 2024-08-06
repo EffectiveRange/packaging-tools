@@ -19,7 +19,7 @@ import sys
 
 sys.path.insert(0, dirname(abspath(__file__)))
 
-from common import check_workspace, get_absolute_path
+from pack_common import check_workspace, get_absolute_path
 
 DEFAULT_PACKAGING = "wheel"
 
@@ -43,7 +43,7 @@ def main() -> None:
     scripts_dir = f"{abspath(dirname(__file__))}"
 
     for script in packaging:
-        script_file = f"{scripts_dir}/{script}"
+        script_file = f"{scripts_dir}/pack_{script}"
 
         if exists(script_file):
             command = [script_file, workspace_dir]

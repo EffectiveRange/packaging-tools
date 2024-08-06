@@ -10,7 +10,7 @@ import sys
 
 sys.path.insert(0, dirname(abspath(__file__)))
 
-from common import check_workspace, run_command
+from pack_common import check_workspace, run_command
 
 
 def main() -> None:
