@@ -15,9 +15,13 @@ from argparse import (
 from configparser import ConfigParser
 from os.path import exists, dirname, abspath
 
+import sys
+
+sys.path.insert(0, dirname(abspath(__file__)))
+
 from common import check_workspace, get_absolute_path
 
-DEFAULT_PACKAGING = 'wheel'
+DEFAULT_PACKAGING = "wheel"
 
 
 def main() -> None:
@@ -36,10 +40,10 @@ def main() -> None:
     else:
         configuration, packaging = _parse_config(arguments, config_file)
 
-    scripts_dir = f'{abspath(dirname(__file__))}'
+    scripts_dir = f"{abspath(dirname(__file__))}"
 
     for script in packaging:
-        script_file = f'{scripts_dir}/{script}'
+        script_file = f"{scripts_dir}/{script}"
 
         if exists(script_file):
             command = [script_file, workspace_dir]
@@ -52,10 +56,10 @@ def main() -> None:
 
 def _run_script(arguments: Namespace, command: list[str]) -> None:
     if arguments.python_bin:
-        command.extend(['-p', arguments.python_bin])
+        command.extend(["-p", arguments.python_bin])
 
     if arguments.output_dir:
-        command.extend(['-o', arguments.output_dir])
+        command.extend(["-o", arguments.output_dir])
 
     result = subprocess.run(command, text=True, stdout=subprocess.PIPE)
 
@@ -63,10 +67,12 @@ def _run_script(arguments: Namespace, command: list[str]) -> None:
         exit(result.returncode)
 
     if result.stdout:
-        print(result.stdout.rstrip('\n'))
+        print(result.stdout.rstrip("\n"))
 
 
-def _parse_config(arguments: Namespace, config_file: str) -> tuple[dict[str, str], list[str]]:
+def _parse_config(
+    arguments: Namespace, config_file: str
+) -> tuple[dict[str, str], list[str]]:
     configuration = {}
     packaging = [DEFAULT_PACKAGING]
 
@@ -74,15 +80,15 @@ def _parse_config(arguments: Namespace, config_file: str) -> tuple[dict[str, str
         parser = ConfigParser()
         parser.read(config_file)
 
-        if parser.has_section('pack-python'):
-            configuration = dict(parser['pack-python'])
+        if parser.has_section("pack-python"):
+            configuration = dict(parser["pack-python"])
 
-            packaging_options = configuration.get('packaging', '').split()
+            packaging_options = configuration.get("packaging", "").split()
 
             if arguments.all:
                 packaging = packaging_options
             else:
-                default = configuration.get('default', DEFAULT_PACKAGING)
+                default = configuration.get("default", DEFAULT_PACKAGING)
                 packaging = [default]
 
     return configuration, packaging
@@ -90,23 +96,38 @@ def _parse_config(arguments: Namespace, config_file: str) -> tuple[dict[str, str
 
 def _get_arguments() -> Namespace:
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-s', '--scripts', help='space separated packaging scripts to run')
-    parser.add_argument('-a', '--all', help='run all configured packaging scripts',
-                        action=BooleanOptionalAction, default=False)
-    parser.add_argument('-c', '--config-file', help='config file path relative to workspace directory',
-                        default='setup.cfg')
-    parser.add_argument('-p', '--python-bin', help='python executable to use', default='python3')
-    parser.add_argument('-o', '--output-dir', help='package output directory')
-    parser.add_argument('workspace_dir', help='workspace directory where setup.py is located')
+    parser.add_argument(
+        "-s", "--scripts", help="space separated packaging scripts to run"
+    )
+    parser.add_argument(
+        "-a",
+        "--all",
+        help="run all configured packaging scripts",
+        action=BooleanOptionalAction,
+        default=False,
+    )
+    parser.add_argument(
+        "-c",
+        "--config-file",
+        help="config file path relative to workspace directory",
+        default="setup.cfg",
+    )
+    parser.add_argument(
+        "-p", "--python-bin", help="python executable to use", default="python3"
+    )
+    parser.add_argument("-o", "--output-dir", help="package output directory")
+    parser.add_argument(
+        "workspace_dir", help="workspace directory where setup.py is located"
+    )
     return parser.parse_args()
 
 
 def _split_arguments(arg_string: str) -> list[str]:
     # Split on spaces, but allow spaces inside double quotes
-    pattern = r'\"(.*?)\"|(\S+)'
+    pattern = r"\"(.*?)\"|(\S+)"
     matches = re.findall(pattern, arg_string)
     return [match[0] if match[0] else match[1] for match in matches]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

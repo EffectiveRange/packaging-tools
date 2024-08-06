@@ -6,7 +6,11 @@
 
 import os
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, Namespace
-from os.path import abspath
+from os.path import abspath, dirname
+
+import sys
+
+sys.path.insert(0, dirname(abspath(__file__)))
 
 from common import check_workspace, run_command, get_absolute_path
 
@@ -19,26 +23,31 @@ def main() -> None:
     check_workspace(workspace_dir)
 
     fpm_arguments = [
-        '-s', 'python',
-        '-t', 'deb',
-        '--python-bin', arguments.python_bin,
-        '--python-package-name-prefix', 'python3',
-        '--log', 'info',
-        '-f',
+        "-s",
+        "python",
+        "-t",
+        "deb",
+        "--python-bin",
+        arguments.python_bin,
+        "--python-package-name-prefix",
+        "python3",
+        "--log",
+        "info",
+        "-f",
     ]
 
     if arguments.arguments:
         fpm_arguments.extend(arguments.arguments.split())
 
-    output_dir = f'{workspace_dir}/dist'
+    output_dir = f"{workspace_dir}/dist"
 
     if arguments.output_dir:
         output_dir = abspath(arguments.output_dir)
 
     os.makedirs(output_dir, exist_ok=True)
-    fpm_arguments.extend(['--package', output_dir])
+    fpm_arguments.extend(["--package", output_dir])
 
-    command = ['fpm', *fpm_arguments, 'setup.py']
+    command = ["fpm", *fpm_arguments, "setup.py"]
 
     results = run_command(workspace_dir, command, r'.*"(.+\.deb)"')
 
@@ -49,12 +58,16 @@ def main() -> None:
 
 def _get_arguments() -> Namespace:
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-a', '--arguments', help='extra arguments passed to fpm')
-    parser.add_argument('-p', '--python-bin', help='python executable to use', default='python3')
-    parser.add_argument('-o', '--output-dir', help='package output directory')
-    parser.add_argument('workspace_dir', help='workspace directory where setup.py is located')
+    parser.add_argument("-a", "--arguments", help="extra arguments passed to fpm")
+    parser.add_argument(
+        "-p", "--python-bin", help="python executable to use", default="python3"
+    )
+    parser.add_argument("-o", "--output-dir", help="package output directory")
+    parser.add_argument(
+        "workspace_dir", help="workspace directory where setup.py is located"
+    )
     return parser.parse_args()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
