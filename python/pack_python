@@ -46,12 +46,16 @@ def main() -> None:
         script_file = f"{scripts_dir}/pack_{script}"
 
         if exists(script_file):
+            print(f"Running packaging script for {script}: {script_file}", file=sys.stderr)
+
             command = [script_file, workspace_dir]
 
             if arg_string := configuration.get(script):
                 command.extend(_split_arguments(arg_string))
 
             _run_script(arguments, command)
+        else:
+            print(f"Packaging script for {script} not found: {script_file}", file=sys.stderr)
 
 
 def _run_script(arguments: Namespace, command: list[str]) -> None:

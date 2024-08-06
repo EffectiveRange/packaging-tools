@@ -40,7 +40,8 @@ $ sudo gem install -N fpm
 ### dh-virtualenv
 
 ```bash
-sudo apt-get install debhelper devscripts equivs dh-virtualenv dh-python python3-virtualenv python3-all python3-stdeb
+$ sudo apt-get install debhelper devscripts equivs dh-virtualenv dh-python python3-virtualenv python3-all
+$ pip install stdeb
 ```
 
 ## Configuration
