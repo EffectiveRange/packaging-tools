@@ -4,7 +4,7 @@
 apt-get update
 
 # Install python3 and pip
-apt-get install python3 python3-pip
+apt-get install -y python3 python3-pip
 
 # Install wheel
 pip3 install wheel
@@ -14,7 +14,7 @@ apt-get install -y ruby ruby-dev rubygems build-essential
 gem install -N fpm
 
 # Install dh-virtualenv and stdeb
-apt-get install debhelper devscripts equivs dh-virtualenv dh-python python3-virtualenv python3-all
+apt-get install -y debhelper devscripts equivs dh-virtualenv dh-python python3-virtualenv python3-all
 pip3 install stdeb
 
 # Add scripts to PATH
