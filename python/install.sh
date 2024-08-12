@@ -19,8 +19,9 @@ pip3 install stdeb
 
 # Add scripts to PATH
 SCRIPTS_DIR=$(dirname "$0")
+ABSOLUTE_SCRIPTS_DIR=$(cd "$SCRIPTS_DIR" && pwd)
 
-find "$SCRIPTS_DIR" -name "pack_*" | while read -r script_path
+find "$ABSOLUTE_SCRIPTS_DIR" -maxdepth 1 -name "pack_*" | while read -r script_path
 do
   script_name=$(basename "$script_path")
   ln -svf "$script_path" "/usr/local/bin/$script_name"
