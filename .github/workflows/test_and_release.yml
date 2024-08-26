@@ -1,0 +1,110 @@
+name: Test and Release
+
+on:
+  push:
+    branches: main
+    tags: v*.*.*
+
+  pull_request:
+    branches: [ "main" ]
+    types:
+      - synchronize
+      - opened
+      - reopened
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Build and test
+
+    runs-on: ubuntu-latest
+
+    permissions:
+        contents: write
+        discussions: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Python dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip python3-virtualenv python3-all
+          pip install wheel stdeb
+
+      - name: Install fpm dependencies
+        run: |
+          sudo apt-get install -y ruby ruby-dev rubygems build-essential
+          sudo gem install -N fpm
+
+      - name: Install dh-virtualenv dependencies
+        run: |
+          sudo apt-get install -y debhelper devscripts equivs dh-virtualenv dh-python
+
+      - name: Verify code quality
+        run: |
+          cd python
+          pip install mypy flake8 pytest
+          mypy
+          flake8
+          pytest
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: test
+
+    name: Publish and release
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Set up version
+        run: |
+          VERSION_REGEX="^[0-9]+\.[0-9]+\.[0-9]+$"
+          if [[ "${GITHUB_REF#refs/tags/v}" =~ $VERSION_REGEX ]]; then
+            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+          else
+            echo "Error: Invalid version"
+            exit 1
+          fi
+
+      - name: Update version in control file
+        run: |
+          sed -i "s/^Version: .*/Version: $VERSION/" debian/DEBIAN/control
+
+      - name: Commit changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git diff --exit-code || git commit -am "Update version to $VERSION"
+
+      - name: Create Release Bundle
+        run: |
+          ./build.sh
+
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        if: ${{ success() }}
+        with:
+          github_token: ${{ github.token }}
+
+      - name: Publish distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}
+          path: |
+            dist/*.tar.gz
+            dist/*.deb
+          if-no-files-found: error
+
+      - name: Release
+        uses: EffectiveRange/version-release-github-action@v1
