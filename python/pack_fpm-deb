@@ -32,7 +32,7 @@ def main() -> None:
         "--python-package-name-prefix",
         "python3",
         "--log",
-        "info",
+        "error",
         "-f",
     ]
 
