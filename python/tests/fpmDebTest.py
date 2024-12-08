@@ -60,6 +60,10 @@ class FpmDebTest(TestCase):
         )
         self.assertTrue(check_files_exist(result.stdout))
 
+    def test_fpm_deb_when_output_already_exists(self):
+        self.test_fpm_deb_when_relative_output_dir_specified()
+        self.test_fpm_deb_when_relative_output_dir_specified()
+
     def test_fpm_deb_when_absolute_output_dir_specified(self):
         # Given
         command = [
