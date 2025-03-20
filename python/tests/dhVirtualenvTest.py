@@ -35,7 +35,7 @@ class DhVirtualenvTest(TestCase):
         # Then
         self.assertEqual(0, result.returncode)
         self.assertEqual(
-            f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb\n", result.stdout
+            f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb\n", result.stdout
         )
         self.assertTrue(check_files_exist(result.stdout))
 
@@ -59,7 +59,7 @@ class DhVirtualenvTest(TestCase):
         # Then
         self.assertEqual(0, result.returncode)
         self.assertEqual(
-            f"{os.getcwd()}/{output_dir}/test-project_1.0.0-1_all.deb\n", result.stdout
+            f"{os.getcwd()}/{output_dir}/test-project_1.0.0-1_amd64.deb\n", result.stdout
         )
         self.assertTrue(check_files_exist(result.stdout))
 
@@ -78,8 +78,27 @@ class DhVirtualenvTest(TestCase):
         # Then
         self.assertEqual(0, result.returncode)
         self.assertEqual(
-            f"{TEST_FILE_SYSTEM_ROOT}/etc/dist/test-project_1.0.0-1_all.deb\n",
+            f"{TEST_FILE_SYSTEM_ROOT}/etc/dist/test-project_1.0.0-1_amd64.deb\n",
             result.stdout,
+        )
+        self.assertTrue(check_files_exist(result.stdout))
+
+    def test_dh_virtualenv_when_architecture_specified(self):
+        # Given
+        command = [
+            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
+            TEST_PROJECT_ROOT,
+            "-A",
+            "all",
+        ]
+
+        # When
+        result = run_command(command)
+
+        # Then
+        self.assertEqual(0, result.returncode)
+        self.assertEqual(
+            f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb\n", result.stdout
         )
         self.assertTrue(check_files_exist(result.stdout))
 
@@ -98,12 +117,12 @@ class DhVirtualenvTest(TestCase):
         # Then
         self.assertEqual(0, result.returncode)
         self.assertEqual(
-            f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb\n", result.stdout
+            f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb\n", result.stdout
         )
         self.assertTrue(check_files_exist(result.stdout))
         self.assertTrue(
             check_file_is_in_deb(
-                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb",
+                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb",
                 "lib/systemd/system/test-project.service",
             )
         )
@@ -123,12 +142,12 @@ class DhVirtualenvTest(TestCase):
         # Then
         self.assertEqual(0, result.returncode)
         self.assertEqual(
-            f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb\n", result.stdout
+            f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb\n", result.stdout
         )
         self.assertTrue(check_files_exist(result.stdout))
         self.assertTrue(
             check_files_matches_in_deb(
-                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb",
+                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb",
                 [
                     ("postinst", "test-project successfully installed"),
                     ("postrm", "test-project successfully removed"),

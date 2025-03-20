@@ -30,7 +30,8 @@ class PackPythonTest(TestCase):
         # Given
         create_file(f'{TEST_FILE_SYSTEM_ROOT}/tmp/setup.cfg',
                     '[pack-python]\n'
-                    'default = dh-virtualenv\n')
+                    'default = dh-virtualenv\n'
+                    'dh-virtualenv = -A all')
 
         command = [f'{RESOURCE_ROOT}/pack_python', TEST_PROJECT_ROOT, '-c', f'{TEST_FILE_SYSTEM_ROOT}/tmp/setup.cfg']
 
@@ -66,7 +67,7 @@ class PackPythonTest(TestCase):
         self.assertEqual(0, result.returncode)
         self.assertEqual(f'{TEST_PROJECT_ROOT}/dist/test_project-1.0.0-py3-none-any.whl\n'
                          f'{TEST_PROJECT_ROOT}/dist/python3-test-project_1.0.0_all.deb\n'
-                         f'{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb\n', result.stdout)
+                         f'{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb\n', result.stdout)
         self.assertTrue(check_files_exist(result.stdout))
 
     def test_pack_python_when_packaging_all_and_relative_output_dir_specified(self):
@@ -81,7 +82,7 @@ class PackPythonTest(TestCase):
         self.assertEqual(0, result.returncode)
         self.assertEqual(f'{os.getcwd()}/{output_dir}/test_project-1.0.0-py3-none-any.whl\n'
                          f'{os.getcwd()}/{output_dir}/python3-test-project_1.0.0_all.deb\n'
-                         f'{os.getcwd()}/{output_dir}/test-project_1.0.0-1_all.deb\n', result.stdout)
+                         f'{os.getcwd()}/{output_dir}/test-project_1.0.0-1_amd64.deb\n', result.stdout)
         self.assertTrue(check_files_exist(result.stdout))
 
     def test_pack_python_when_packaging_all_and_absolute_output_dir_specified(self):
@@ -96,7 +97,7 @@ class PackPythonTest(TestCase):
         self.assertEqual(0, result.returncode)
         self.assertEqual(f'{TEST_FILE_SYSTEM_ROOT}/etc/dist/test_project-1.0.0-py3-none-any.whl\n'
                          f'{TEST_FILE_SYSTEM_ROOT}/etc/dist/python3-test-project_1.0.0_all.deb\n'
-                         f'{TEST_FILE_SYSTEM_ROOT}/etc/dist/test-project_1.0.0-1_all.deb\n', result.stdout)
+                         f'{TEST_FILE_SYSTEM_ROOT}/etc/dist/test-project_1.0.0-1_amd64.deb\n', result.stdout)
         self.assertTrue(check_files_exist(result.stdout))
 
     def test_propagates_return_code_of_command(self):
