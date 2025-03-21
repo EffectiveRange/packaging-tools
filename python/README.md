@@ -44,6 +44,10 @@ $ sudo apt-get install debhelper devscripts equivs dh-virtualenv dh-python pytho
 $ pip install stdeb
 ```
 
+> [!CAUTION]
+> python3-stdeb 0.10.0 package contains a bug that prevents `dh-virtualenv` packaging from working properly.
+> The bug is not present in the PyPI version of stdeb, therefore it is recommended to install stdeb using pip.
+
 ## Configuration
 
 The configuration is read from the `setup.cfg` file in the target project's root directory by default.
@@ -109,18 +113,17 @@ $ ./pack_python tests/test-project --scripts "wheel fpm-deb"
 
 ## Packaging scripts
 
-- `wheel` - Create binary wheel package
-- `fpm-deb` - Create debian .deb package using [FPM](https://fpm.readthedocs.io/en/latest/index.html)
-- `dh-virtualenv` - Create debian .deb package using [dh-virtualenv](https://pack_dh-virtualenv.readthedocs.io/en/latest/)
-  and [stdeb](https://github.com/astraw/stdeb)
+- `pack_wheel` - Create binary wheel package
+- `pack_fpm-deb` - Create debian .deb package using [FPM](https://fpm.readthedocs.io/en/latest/index.html)
+- `pack_dh-virtualenv` - Create debian .deb package using [dh-virtualenv](https://pack_dh-virtualenv.readthedocs.io/en/latest/) and [stdeb](https://github.com/astraw/stdeb)
 
 ### wheel
 
-The `wheel` script is using the `bdist_wheel` setuptools command to create a binary wheel package.
+The `pack_wheel` script is using the `bdist_wheel` setuptools command to create a binary wheel package.
 
 ```bash
-$ wheel --help
-usage: wheel [-h] [-p PYTHON_BIN] [-o OUTPUT_DIR] workspace_dir
+$ pack_wheel --help
+usage: pack_wheel [-h] [-p PYTHON_BIN] [-o OUTPUT_DIR] workspace_dir
 
 positional arguments:
   workspace_dir         workspace directory where setup.py is located
@@ -135,11 +138,11 @@ options:
 
 ### fpm-deb
 
-The `fpm-deb` script is using the `fpm` to create a debian .deb package.
+The `pack_fpm-deb` script is using the `fpm` to create a debian .deb package.
 
 ```bash
-$ fpm-deb --help
-usage: fpm-deb [-h] [-a ARGUMENTS] [-p PYTHON_BIN] [-o OUTPUT_DIR] workspace_dir
+$ pack_fpm-deb --help
+usage: pack_fpm-deb [-h] [-a ARGUMENTS] [-p PYTHON_BIN] [-o OUTPUT_DIR] workspace_dir
 
 positional arguments:
   workspace_dir         workspace directory where setup.py is located
@@ -156,12 +159,12 @@ options:
 
 ### dh-virtualenv
 
-The `dh-virtualenv` script is using `stdeb` and `dh-virtualenv` to create a debian .deb package
+The `pack_dh-virtualenv` script is using `stdeb` and `dh-virtualenv` to create a debian .deb package
 with all Python dependecies pre-installed in a virtual environment.
 
 ```bash
-$ dh-virtualenv --help
-usage: dh-virtualenv [-h] [-a ARGUMENTS] [-p PYTHON_BIN] [-s SERVICE_FILE] [-e EXTRA_FILES] [-o OUTPUT_DIR] workspace_dir
+$ pack_dh-virtualenv --help
+usage: pack_dh-virtualenv [-h] [-a ARGUMENTS] [-p PYTHON_BIN] [-A ARCHITECTURE] [-s SERVICE_FILE] [-e EXTRA_FILES] [-o OUTPUT_DIR] workspace_dir
 
 positional arguments:
   workspace_dir         workspace directory where setup.py is located
@@ -172,6 +175,8 @@ options:
                         extra arguments passed to stdeb (default: None)
   -p PYTHON_BIN, --python-bin PYTHON_BIN
                         python executable to use (default: python3)
+  -A ARCHITECTURE, --architecture ARCHITECTURE
+                        control file architecture (default: any)
   -s SERVICE_FILE, --service-file SERVICE_FILE
                         service unit file path (default: None)
   -e EXTRA_FILES, --extra-files EXTRA_FILES
