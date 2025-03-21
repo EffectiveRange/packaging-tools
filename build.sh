@@ -24,4 +24,20 @@ cp -v dist/pack_* debian/usr/local/bin
 
 VERSION="$(grep Version: debian/DEBIAN/control | cut -d' ' -f2)"
 
-dpkg-deb -Zxz --root-owner-group --build debian "dist/packaging-tools_$VERSION-1_all.deb"
+PACKAGE_PATH="dist/packaging-tools_${VERSION}-1_all.deb"
+
+dpkg-deb -Zxz --root-owner-group --build debian "$PACKAGE_PATH"
+
+DISTRIBUTIONS=$1
+
+if [ -z "$DISTRIBUTIONS" ]
+then
+  DISTRIBUTIONS="bullseye bookworm"
+fi
+
+for distribution in $DISTRIBUTIONS
+do
+  cp -v "$PACKAGE_PATH" "dist/${distribution}_packaging-tools_${VERSION}-1_all.deb"
+done
+
+rm "$PACKAGE_PATH"
