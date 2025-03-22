@@ -103,7 +103,7 @@ def _build_package(
         for file in glob.glob(extra_files):
             shutil.copy(file, debian_dir)
 
-    command = ["dpkg-buildpackage", "-us", "-uc", "-ui", "-b"]
+    command = ["DEB_BUILD_OPTIONS=noautodbgsym", "dpkg-buildpackage", "-us", "-uc", "-ui", "-b"]
 
     return run_command(build_dir, command, r".*'\.\./(.+\.deb)'")
 
