@@ -112,4 +112,4 @@ jobs:
           if-no-files-found: error
 
       - name: Release
-        uses: EffectiveRange/version-release-github-action@v1
+        uses: EffectiveRange/version-release-github-action@v2
