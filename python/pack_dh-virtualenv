@@ -93,6 +93,9 @@ def _build_package(
 
     _override_architecture(arguments.architecture, debian_dir)
 
+    if arguments.shlibdeps:
+        _add_shlidbeps_parameters(arguments, debian_dir)
+
     if arguments.service_file:
         service_file = get_absolute_path(arguments.service_file, workspace_dir)
         shutil.copy(service_file, debian_dir)
@@ -116,6 +119,13 @@ def _override_architecture(architecture: str, debian_dir: str) -> None:
             print(line, end='')
 
 
+def _add_shlidbeps_parameters(arguments, debian_dir):
+    with open(f"{debian_dir}/rules", "a") as file:
+        file.write(f"""override_dh_shlibdeps:
+\tdh_shlibdeps -- {arguments.shlibdeps.strip('"')}
+""")
+
+
 def _get_arguments() -> Namespace:
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument("-a", "--arguments", help="extra arguments passed to stdeb")
@@ -123,6 +133,7 @@ def _get_arguments() -> Namespace:
         "-p", "--python-bin", help="python executable to use", default="python3"
     )
     parser.add_argument("-A", "--architecture", help="control file architecture", default="any")
+    parser.add_argument("-S", "--shlibdeps", help="add dpkg-shlibdeps parameters to debian/rules")
     parser.add_argument("-s", "--service-file", help="service unit file path")
     parser.add_argument(
         "-e", "--extra-files", help="add extra files into debian folder before build"
