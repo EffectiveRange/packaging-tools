@@ -6,6 +6,7 @@
 
 import re
 import subprocess
+import sys
 from argparse import (
     ArgumentParser,
     ArgumentDefaultsHelpFormatter,
@@ -14,8 +15,6 @@ from argparse import (
 )
 from configparser import ConfigParser
 from os.path import exists, dirname, abspath
-
-import sys
 
 sys.path.insert(0, dirname(abspath(__file__)))
 
@@ -33,12 +32,12 @@ def main() -> None:
 
     config_file = get_absolute_path(arguments.config_file, workspace_dir)
 
-    configuration: dict[str, str] = {}
+    configuration, packaging = _parse_config(arguments, config_file)
+
+    print(f"Using configuration {configuration}", file=sys.stderr)
 
     if arguments.scripts:
         packaging = arguments.scripts.split()
-    else:
-        configuration, packaging = _parse_config(arguments, config_file)
 
     scripts_dir = f"{abspath(dirname(__file__))}"
 
@@ -51,6 +50,7 @@ def main() -> None:
             command = [script_file, workspace_dir]
 
             if arg_string := configuration.get(script):
+                print(f"Using arguments for {script}: {arg_string}", file=sys.stderr)
                 command.extend(_split_arguments(arg_string))
 
             _run_script(arguments, command)
@@ -75,7 +75,7 @@ def _run_script(arguments: Namespace, command: list[str]) -> None:
 
 
 def _parse_config(
-    arguments: Namespace, config_file: str
+        arguments: Namespace, config_file: str
 ) -> tuple[dict[str, str], list[str]]:
     configuration = {}
     packaging = [DEFAULT_PACKAGING]
