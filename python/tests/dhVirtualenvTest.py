@@ -101,6 +101,31 @@ class DhVirtualenvTest(TestCase):
             f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb\n", result.stdout
         )
         self.assertTrue(check_files_exist(result.stdout))
+        self.assertTrue(
+            check_files_matches_in_deb(
+                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb", [("control", "Architecture: all")],
+            )
+        )
+
+    def test_dh_virtualenv_when_shlibdeps_parameters_specified(self):
+        # Given
+        command = [
+            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
+            TEST_PROJECT_ROOT,
+            "-S",
+            "\"-ldebian/test-project/opt/venvs/test-project/lib\"",
+        ]
+
+        # When
+        result = run_command(command)
+
+        # Then
+        self.assertEqual(0, result.returncode)
+        self.assertEqual(
+            f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb\n", result.stdout
+        )
+        self.assertTrue(check_files_exist(result.stdout))
+        self.assertTrue("dh_shlibdeps -- -ldebian/test-project/opt/venvs/test-project/lib" in result.stderr)
 
     def test_dh_virtualenv_when_service_file_specified(self):
         # Given
