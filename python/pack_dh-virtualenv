@@ -15,7 +15,7 @@ from typing import Generator
 
 sys.path.insert(0, dirname(abspath(__file__)))
 
-from pack_common import check_workspace, run_command, get_absolute_path
+from pack_common import check_workspace, run_command, get_absolute_path, replace_in_file
 
 
 def main() -> None:
@@ -93,6 +93,9 @@ def _build_package(
 
     _override_architecture(arguments.architecture, debian_dir)
 
+    if arguments.dh_virtualenv_arguments:
+        _add_dh_virtualenv_arguments(arguments, debian_dir)
+
     if arguments.shlibdeps:
         _add_shlidbeps_parameters(arguments, debian_dir)
 
@@ -119,6 +122,14 @@ def _override_architecture(architecture: str, debian_dir: str) -> None:
             print(line, end='')
 
 
+def _add_dh_virtualenv_arguments(arguments: Namespace, debian_dir: str) -> None:
+    replace_in_file(
+        f"{debian_dir}/rules",
+        "dh_virtualenv",
+        f"dh_virtualenv {arguments.dh_virtualenv_arguments}",
+    )
+
+
 def _add_shlidbeps_parameters(arguments: Namespace, debian_dir: str) -> None:
     with open(f"{debian_dir}/rules", "a") as file:
         file.write(f"""override_dh_shlibdeps:
@@ -132,6 +143,7 @@ def _get_arguments() -> Namespace:
     parser.add_argument(
         "-p", "--python-bin", help="python executable to use", default="python3"
     )
+    parser.add_argument("-d", "--dh-virtualenv-arguments", help="extra arguments passed to dh-virtualenv")
     parser.add_argument("-A", "--architecture", help="control file architecture", default="any")
     parser.add_argument("-S", "--shlibdeps", help="add dpkg-shlibdeps parameters to debian/rules")
     parser.add_argument("-s", "--service-file", help="service unit file path")
