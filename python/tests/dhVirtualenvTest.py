@@ -83,6 +83,25 @@ class DhVirtualenvTest(TestCase):
         )
         self.assertTrue(check_files_exist(result.stdout))
 
+    def test_dh_virtualenv_when_dh_virtualenv_arguments_specified(self):
+        # Given
+        command = [
+            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
+            TEST_PROJECT_ROOT,
+            "-d=--use-system-packages",
+        ]
+
+        # When
+        result = run_command(command)
+
+        # Then
+        self.assertEqual(0, result.returncode)
+        self.assertEqual(
+            f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb\n", result.stdout
+        )
+        self.assertTrue(check_files_exist(result.stdout))
+        self.assertTrue("dh_virtualenv --use-system-packages --python python3" in result.stderr)
+
     def test_dh_virtualenv_when_architecture_specified(self):
         # Given
         command = [
