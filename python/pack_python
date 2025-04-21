@@ -49,6 +49,17 @@ def main() -> None:
 
             command = [script_file, workspace_dir]
 
+            if service := configuration.get("service"):
+                command.extend(["--service-file", service])
+            if pre_install := configuration.get("preinst"):
+                command.extend(["--preinst-file", pre_install])
+            if post_install := configuration.get("postinst"):
+                command.extend(["--postinst-file", post_install])
+            if pre_remove := configuration.get("prerm"):
+                command.extend(["--prerm-file", pre_remove])
+            if post_remove := configuration.get("postrm"):
+                command.extend(["--postrm-file", post_remove])
+
             if arg_string := configuration.get(script):
                 print(f"Using arguments for {script}: {arg_string}", file=sys.stderr)
                 command.extend(_split_arguments(arg_string))
@@ -100,29 +111,14 @@ def _parse_config(
 
 def _get_arguments() -> Namespace:
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-        "-s", "--scripts", help="space separated packaging scripts to run"
-    )
-    parser.add_argument(
-        "-a",
-        "--all",
-        help="run all configured packaging scripts",
-        action=BooleanOptionalAction,
-        default=False,
-    )
-    parser.add_argument(
-        "-c",
-        "--config-file",
-        help="config file path relative to workspace directory",
-        default="setup.cfg",
-    )
-    parser.add_argument(
-        "-p", "--python-bin", help="python executable to use", default="python3"
-    )
+    parser.add_argument("-s", "--scripts", help="space separated packaging scripts to run")
+    parser.add_argument("-a", "--all", help="run all configured packaging scripts",
+                        action=BooleanOptionalAction, default=False)
+    parser.add_argument("-c", "--config-file", help="config file path relative to workspace directory",
+                        default="setup.cfg")
+    parser.add_argument("-p", "--python-bin", help="python executable to use", default="python3")
     parser.add_argument("-o", "--output-dir", help="package output directory")
-    parser.add_argument(
-        "workspace_dir", help="workspace directory where setup.py is located"
-    )
+    parser.add_argument("workspace_dir", help="workspace directory where setup.py is located")
     return parser.parse_args()
 
 

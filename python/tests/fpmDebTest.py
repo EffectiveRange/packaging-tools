@@ -84,7 +84,7 @@ class FpmDebTest(TestCase):
         )
         self.assertTrue(check_files_exist(result.stdout))
 
-    def test_fpm_deb_when_service_file_specified(self):
+    def test_fpm_deb_when_extra_arguments_specified(self):
         # Given
         command = [
             f"{RESOURCE_ROOT}/pack_fpm-deb",
@@ -110,13 +110,44 @@ class FpmDebTest(TestCase):
             )
         )
 
-    def test_fpm_deb_when_extra_files_specified(self):
+    def test_fpm_deb_when_service_file_specified(self):
         # Given
         command = [
             f"{RESOURCE_ROOT}/pack_fpm-deb",
             TEST_PROJECT_ROOT,
-            "-a",
-            f"--after-install {TEST_PROJECT_ROOT}/scripts/test-project.postinst",
+            f"-s {TEST_PROJECT_ROOT}/service/test-project.service",
+        ]
+
+        # When
+        result = run_command(command)
+
+        # Then
+        self.assertEqual(0, result.returncode)
+        self.assertEqual(
+            f"{TEST_PROJECT_ROOT}/dist/python3-test-project_1.0.0_all.deb\n",
+            result.stdout,
+        )
+        self.assertTrue(check_files_exist(result.stdout))
+        self.assertTrue(
+            check_file_is_in_deb(
+                f"{TEST_PROJECT_ROOT}/dist/python3-test-project_1.0.0_all.deb",
+                "lib/systemd/system/test-project.service",
+            )
+        )
+
+    def test_fpm_deb_when_lifecycle_files_specified(self):
+        # Given
+        command = [
+            f"{RESOURCE_ROOT}/pack_fpm-deb",
+            TEST_PROJECT_ROOT,
+            "--preinst-file",
+            f"{TEST_PROJECT_ROOT}/scripts/test-project.preinst",
+            "--postinst-file",
+            f"{TEST_PROJECT_ROOT}/scripts/test-project.postinst",
+            "--prerm-file",
+            f"{TEST_PROJECT_ROOT}/scripts/test-project.prerm",
+            "--postrm-file",
+            f"{TEST_PROJECT_ROOT}/scripts/test-project.postrm",
         ]
 
         # When
@@ -132,7 +163,12 @@ class FpmDebTest(TestCase):
         self.assertTrue(
             check_files_matches_in_deb(
                 f"{TEST_PROJECT_ROOT}/dist/python3-test-project_1.0.0_all.deb",
-                [("postinst", "test-project successfully installed")],
+                [
+                    ("preinst", "installing test-project"),
+                    ("postinst", "test-project installed"),
+                    ("prerm", "removing test-project"),
+                    ("postrm", "test-project removed"),
+                ],
             )
         )
 
