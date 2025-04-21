@@ -4,9 +4,9 @@
 # SPDX-FileCopyrightText: 2024 Attila Gombos <attila.gombos@effective-range.com>
 # SPDX-License-Identifier: MIT
 
+import sys
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, Namespace
 from os.path import abspath, dirname
-import sys
 
 sys.path.insert(0, dirname(abspath(__file__)))
 
@@ -42,14 +42,10 @@ def main() -> None:
 
 def _get_arguments() -> Namespace:
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-        "-p", "--python-bin", help="python executable to use", default="python3"
-    )
+    parser.add_argument("-p", "--python-bin", help="python executable to use", default="python3")
     parser.add_argument("-o", "--output-dir", help="package output directory")
-    parser.add_argument(
-        "workspace_dir", help="workspace directory where setup.py is located"
-    )
-    return parser.parse_args()
+    parser.add_argument("workspace_dir", help="workspace directory where setup.py is located")
+    return parser.parse_known_args()[0]
 
 
 if __name__ == "__main__":

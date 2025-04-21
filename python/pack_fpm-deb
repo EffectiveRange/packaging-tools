@@ -5,10 +5,9 @@
 # SPDX-License-Identifier: MIT
 
 import os
+import sys
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, Namespace
 from os.path import abspath, dirname
-
-import sys
 
 sys.path.insert(0, dirname(abspath(__file__)))
 
@@ -47,6 +46,17 @@ def main() -> None:
     os.makedirs(output_dir, exist_ok=True)
     fpm_arguments.extend(["--package", output_dir])
 
+    if service := arguments.service_file:
+        fpm_arguments.extend(["--deb-systemd", service, "--deb-systemd-enable", "--deb-systemd-auto-start"])
+    if pre_install := arguments.preinst_file:
+        fpm_arguments.extend(["--before-install", pre_install])
+    if post_install := arguments.postinst_file:
+        fpm_arguments.extend(["--after-install", post_install])
+    if pre_remove := arguments.prerm_file:
+        fpm_arguments.extend(["--before-remove", pre_remove])
+    if post_remove := arguments.postrm_file:
+        fpm_arguments.extend(["--after-remove", post_remove])
+
     command = ["fpm", *fpm_arguments, "setup.py"]
 
     results = run_command(workspace_dir, command, r'.*"(.+\.deb)"')
@@ -59,13 +69,14 @@ def main() -> None:
 def _get_arguments() -> Namespace:
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument("-a", "--arguments", help="extra arguments passed to fpm")
-    parser.add_argument(
-        "-p", "--python-bin", help="python executable to use", default="python3"
-    )
+    parser.add_argument("-p", "--python-bin", help="python executable to use", default="python3")
     parser.add_argument("-o", "--output-dir", help="package output directory")
-    parser.add_argument(
-        "workspace_dir", help="workspace directory where setup.py is located"
-    )
+    parser.add_argument("-s", "--service-file", help="service unit file path")
+    parser.add_argument("--preinst-file", help="preinst file path")
+    parser.add_argument("--postinst-file", help="postinst file path")
+    parser.add_argument("--prerm-file", help="prerm file path")
+    parser.add_argument("--postrm-file", help="postrm file path")
+    parser.add_argument("workspace_dir", help="workspace directory where setup.py is located")
     return parser.parse_args()
 
 

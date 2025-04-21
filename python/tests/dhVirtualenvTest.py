@@ -171,7 +171,79 @@ class DhVirtualenvTest(TestCase):
             )
         )
 
+    def test_dh_virtualenv_when_lifecycle_files_specified(self):
+        # Given
+        command = [
+            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
+            TEST_PROJECT_ROOT,
+            "--preinst-file",
+            f"{TEST_PROJECT_ROOT}/scripts/test-project.preinst",
+            "--postinst-file",
+            f"{TEST_PROJECT_ROOT}/scripts/test-project.postinst",
+            "--prerm-file",
+            f"{TEST_PROJECT_ROOT}/scripts/test-project.prerm",
+            "--postrm-file",
+            f"{TEST_PROJECT_ROOT}/scripts/test-project.postrm",
+        ]
+
+        # When
+        result = run_command(command)
+
+        # Then
+        self.assertEqual(0, result.returncode)
+        self.assertEqual(
+            f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb\n", result.stdout
+        )
+        self.assertTrue(check_files_exist(result.stdout))
+        self.assertTrue(
+            check_files_matches_in_deb(
+                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb",
+                [
+                    ("preinst", "installing test-project"),
+                    ("postinst", "test-project installed"),
+                    ("prerm", "removing test-project"),
+                    ("postrm", "test-project removed"),
+                ],
+            )
+        )
+
     def test_dh_virtualenv_when_extra_files_specified(self):
+        # Given
+        command = [
+            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
+            TEST_PROJECT_ROOT,
+            "-e",
+            f"{TEST_PROJECT_ROOT}/scripts/test-project.preinst",
+            "-e",
+            f"{TEST_PROJECT_ROOT}/scripts/test-project.postinst",
+            "-e",
+            f"{TEST_PROJECT_ROOT}/scripts/test-project.prerm",
+            "-e",
+            f"{TEST_PROJECT_ROOT}/scripts/test-project.postrm",
+        ]
+
+        # When
+        result = run_command(command)
+
+        # Then
+        self.assertEqual(0, result.returncode)
+        self.assertEqual(
+            f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb\n", result.stdout
+        )
+        self.assertTrue(check_files_exist(result.stdout))
+        self.assertTrue(
+            check_files_matches_in_deb(
+                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb",
+                [
+                    ("preinst", "installing test-project"),
+                    ("postinst", "test-project installed"),
+                    ("prerm", "removing test-project"),
+                    ("postrm", "test-project removed"),
+                ],
+            )
+        )
+
+    def test_dh_virtualenv_when_extra_files_specified_with_wildcard(self):
         # Given
         command = [
             f"{RESOURCE_ROOT}/pack_dh-virtualenv",
@@ -193,8 +265,10 @@ class DhVirtualenvTest(TestCase):
             check_files_matches_in_deb(
                 f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb",
                 [
-                    ("postinst", "test-project successfully installed"),
-                    ("postrm", "test-project successfully removed"),
+                    ("preinst", "installing test-project"),
+                    ("postinst", "test-project installed"),
+                    ("prerm", "removing test-project"),
+                    ("postrm", "test-project removed"),
                 ],
             )
         )
