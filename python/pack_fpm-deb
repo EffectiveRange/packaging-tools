@@ -26,14 +26,15 @@ def main() -> None:
         "python",
         "-t",
         "deb",
-        "--python-bin",
-        arguments.python_bin,
         "--python-package-name-prefix",
         "python3",
         "--log",
         "error",
         "-f",
     ]
+
+    if arguments.python_bin:
+        fpm_arguments.extend(["--python-bin", arguments.python_bin])
 
     if arguments.arguments:
         fpm_arguments.extend(arguments.arguments.split())
@@ -69,7 +70,7 @@ def main() -> None:
 def _get_arguments() -> Namespace:
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument("-a", "--arguments", help="extra arguments passed to fpm")
-    parser.add_argument("-p", "--python-bin", help="python executable to use", default="python3")
+    parser.add_argument("-p", "--python-bin", help="python executable to use")
     parser.add_argument("-o", "--output-dir", help="package output directory")
     parser.add_argument("-s", "--service-file", help="service unit file path")
     parser.add_argument("--preinst-file", help="preinst file path")
