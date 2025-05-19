@@ -32,7 +32,7 @@ def main() -> None:
 
     results = _create_sources(arguments, workspace_dir, output_dir)
 
-    build_dir = f"{output_dir}/{next(results)}"
+    build_dir = f"{output_dir}/{next(results)}".replace(".dev", "~dev")
 
     results = _build_package(arguments, workspace_dir, build_dir)
 
