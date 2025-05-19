@@ -50,9 +50,9 @@ def main() -> None:
     if service := arguments.service_file:
         fpm_arguments.extend(["--deb-systemd", service, "--deb-systemd-enable", "--deb-systemd-auto-start"])
     if pre_install := arguments.preinst_file:
-        fpm_arguments.extend(["--before-install", pre_install])
+        fpm_arguments.extend(["--before-install", pre_install, "--before-upgrade", pre_install])
     if post_install := arguments.postinst_file:
-        fpm_arguments.extend(["--after-install", post_install])
+        fpm_arguments.extend(["--after-install", post_install, "--after-upgrade", post_install])
     if pre_remove := arguments.prerm_file:
         fpm_arguments.extend(["--before-remove", pre_remove])
     if post_remove := arguments.postrm_file:
