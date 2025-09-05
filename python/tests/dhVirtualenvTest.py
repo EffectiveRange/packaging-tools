@@ -207,6 +207,50 @@ class DhVirtualenvTest(TestCase):
             )
         )
 
+    def test_dh_virtualenv_when_service_and_lifecycle_files_specified(self):
+        # Given
+        command = [
+            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
+            TEST_PROJECT_ROOT,
+            "-s",
+            f"{TEST_PROJECT_ROOT}/service/test-project.service",
+            "--preinst-file",
+            f"{TEST_PROJECT_ROOT}/scripts/test-project.preinst",
+            "--postinst-file",
+            f"{TEST_PROJECT_ROOT}/scripts/test-project.postinst",
+            "--prerm-file",
+            f"{TEST_PROJECT_ROOT}/scripts/test-project.prerm",
+            "--postrm-file",
+            f"{TEST_PROJECT_ROOT}/scripts/test-project.postrm",
+        ]
+
+        # When
+        result = run_command(command)
+
+        # Then
+        self.assertEqual(0, result.returncode)
+        self.assertEqual(
+            f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb\n", result.stdout
+        )
+        self.assertTrue(check_files_exist(result.stdout))
+        self.assertTrue(
+            check_file_is_in_deb(
+                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb",
+                "lib/systemd/system/test-project.service",
+            )
+        )
+        self.assertTrue(
+            check_files_matches_in_deb(
+                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb",
+                [
+                    ("preinst", "installing test-project"),
+                    ("postinst", "test-project installed"),
+                    ("prerm", "removing test-project"),
+                    ("postrm", "test-project removed"),
+                ],
+            )
+        )
+
     def test_dh_virtualenv_when_extra_files_specified(self):
         # Given
         command = [

@@ -7,6 +7,7 @@
 import glob
 import re
 import shutil
+
 import sys
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, Namespace
 from fileinput import FileInput
@@ -15,7 +16,7 @@ from typing import Generator
 
 sys.path.insert(0, dirname(abspath(__file__)))
 
-from pack_common import check_workspace, run_command, get_absolute_path, replace_in_file
+from pack_common import check_workspace, run_command, get_absolute_path
 
 
 def main() -> None:
@@ -27,12 +28,28 @@ def main() -> None:
 
     output_dir = f"{workspace_dir}/dist"
 
-    if arguments.output_dir:
-        output_dir = abspath(arguments.output_dir)
-
     results = _create_sources(arguments, workspace_dir, output_dir)
 
     build_dir = f"{output_dir}/{next(results)}".replace(".dev", "~dev")
+
+    with open(f"{build_dir}/debian/rules", "w") as file:
+        file.write(f"""#!/usr/bin/make -f
+
+%:
+\tdh $@ --with systemd
+
+override_dh_auto_clean:
+\tpython3 setup.py clean -a
+\trm -rf build dist *.egg-info
+
+override_dh_auto_build:
+\tpython3 setup.py bdist_wheel
+
+override_dh_auto_install:
+\tmkdir -p debian/test-project/opt/dist
+\tcp dist/*.whl debian/test-project/opt/dist/
+
+""")
 
     results = _build_package(arguments, workspace_dir, build_dir)
 
@@ -50,7 +67,6 @@ def _create_sources(
         package_name,
         "--dist-dir",
         output_dir,
-        "--with-dh-virtualenv",
         "--compat",
         "10",
     ]
@@ -86,18 +102,10 @@ def _extract_package_name(workspace_dir: str) -> str:
         return workspace_dir.split("/")[-1]
 
 
-def _build_package(
-        arguments: Namespace, workspace_dir: str, build_dir: str
-) -> Generator[str, None, None]:
+def _build_package(arguments: Namespace, workspace_dir: str, build_dir: str) -> Generator[str, None, None]:
     debian_dir = f"{build_dir}/debian"
 
     _override_architecture(arguments.architecture, debian_dir)
-
-    if arguments.dh_virtualenv_arguments:
-        _add_dh_virtualenv_arguments(arguments, debian_dir)
-
-    if arguments.shlibdeps:
-        _add_shlidbeps_parameters(arguments, debian_dir)
 
     if service := arguments.service_file:
         service_file = get_absolute_path(service, workspace_dir)
@@ -120,7 +128,7 @@ def _build_package(
             for file in glob.glob(path):
                 shutil.copy(file, debian_dir)
 
-    command = ["DEB_BUILD_OPTIONS=noautodbgsym", "dpkg-buildpackage", "-rfakeroot", "-us", "-uc", "-ui", "-b"]
+    command = ["dpkg-buildpackage", "-rfakeroot", "-us", "-uc", "-ui", "-b"]
 
     return run_command(build_dir, command, r".*'\.\./(.+\.deb)'")
 
@@ -131,21 +139,6 @@ def _override_architecture(architecture: str, debian_dir: str) -> None:
             if 'Architecture:' in line:
                 line = f'Architecture: {architecture}\n'
             print(line, end='')
-
-
-def _add_dh_virtualenv_arguments(arguments: Namespace, debian_dir: str) -> None:
-    replace_in_file(
-        f"{debian_dir}/rules",
-        "dh_virtualenv",
-        f"dh_virtualenv {arguments.dh_virtualenv_arguments}",
-    )
-
-
-def _add_shlidbeps_parameters(arguments: Namespace, debian_dir: str) -> None:
-    with open(f"{debian_dir}/rules", "a") as file:
-        file.write(f"""override_dh_shlibdeps:
-\tdh_shlibdeps -- {arguments.shlibdeps.strip('"')}
-""")
 
 
 def _get_arguments() -> Namespace:
@@ -160,11 +153,9 @@ def _get_arguments() -> Namespace:
     parser.add_argument("--postrm-file", help="postrm file path")
     parser.add_argument("-e", "--extra-files", help="add extra files into the debian folder before build",
                         action="append")
-    parser.add_argument("-d", "--dh-virtualenv-arguments", help="extra arguments passed to dh-virtualenv")
     parser.add_argument("-A", "--architecture", help="control file architecture", default="any")
-    parser.add_argument("-S", "--shlibdeps", help="add dpkg-shlibdeps parameters to debian/rules")
     parser.add_argument("workspace_dir", help="workspace directory where setup.py is located")
-    return parser.parse_args()
+    return parser.parse_known_args()[0]
 
 
 if __name__ == "__main__":
