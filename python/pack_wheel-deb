@@ -11,7 +11,7 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, Namespace
 from os.path import abspath, dirname
 from typing import Generator
 
-from python.pack_common import extract_version
+from pack_common import extract_version
 
 sys.path.insert(0, dirname(abspath(__file__)))
 
