@@ -5,18 +5,17 @@
 # SPDX-License-Identifier: MIT
 
 import glob
-import re
 import shutil
-
 import sys
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, Namespace
-from fileinput import FileInput
 from os.path import abspath, dirname
 from typing import Generator
 
+from python.pack_common import extract_version
+
 sys.path.insert(0, dirname(abspath(__file__)))
 
-from pack_common import check_workspace, run_command, get_absolute_path
+from pack_common import check_workspace, run_command, get_absolute_path, extract_package_name, override_architecture
 
 
 def main() -> None:
@@ -32,25 +31,6 @@ def main() -> None:
 
     build_dir = f"{output_dir}/{next(results)}".replace(".dev", "~dev")
 
-    with open(f"{build_dir}/debian/rules", "w") as file:
-        file.write(f"""#!/usr/bin/make -f
-
-%:
-\tdh $@ --with systemd
-
-override_dh_auto_clean:
-\tpython3 setup.py clean -a
-\trm -rf build dist *.egg-info
-
-override_dh_auto_build:
-\tpython3 setup.py bdist_wheel
-
-override_dh_auto_install:
-\tmkdir -p debian/test-project/opt/dist
-\tcp dist/*.whl debian/test-project/opt/dist/
-
-""")
-
     results = _build_package(arguments, workspace_dir, build_dir)
 
     for result in results:
@@ -60,7 +40,7 @@ override_dh_auto_install:
 def _create_sources(
         arguments: Namespace, workspace_dir: str, output_dir: str
 ) -> Generator[str, None, None]:
-    package_name = _extract_package_name(workspace_dir)
+    package_name = extract_package_name(workspace_dir)
 
     command_arguments = [
         "--package3",
@@ -88,39 +68,67 @@ def _create_sources(
     return run_command(workspace_dir, command, r"copying setup.py -> (.+)")
 
 
-def _extract_package_name(workspace_dir: str) -> str:
-    with open(f"{workspace_dir}/setup.py", "r") as file:
-        setup_code = file.read()
+def _setup_rules(build_dir: str, package_name: str) -> None:
+    with open(f"{build_dir}/debian/rules", "w") as file:
+        file.write(f"""#!/usr/bin/make -f
 
-    pattern = r'name\s*=\s*[\'"]([^\'"]+)[\'"]'
+%:
+\tdh $@ --with systemd
 
-    match = re.search(pattern, setup_code)
+override_dh_auto_clean:
+\tpython3 setup.py clean -a
+\trm -rf build dist *.egg-info
 
-    if match:
-        return match.group(1)
+override_dh_auto_build:
+\tpython3 setup.py bdist_wheel
+
+override_dh_auto_install:
+\tmkdir -p debian/{package_name}/opt/effective-range/dist/{package_name}
+\tcp dist/*.whl debian/{package_name}/opt/effective-range/dist/{package_name}
+""")
+
+
+def _setup_lifecycle_scripts(build_dir: str, package_name: str) -> None:
+    version = extract_version(build_dir)
+    post_install = _get_post_install_script(package_name, version)
+    _setup_lifecycle_script(f"{build_dir}/debian/postinst", post_install)
+
+    pre_remove = _get_pre_remove_script(package_name)
+    _setup_lifecycle_script(f"{build_dir}/debian/prerm", pre_remove)
+
+
+def _setup_lifecycle_script(script_path: str, content: str) -> None:
+    if not glob.glob(script_path):
+        with open(script_path, "w") as file:
+            file.write(f"#!/bin/bash\n\n{content}")
     else:
-        return workspace_dir.split("/")[-1]
+        with open(script_path, "r") as file:
+            existing_content = file.read()
+        if "#DEBHELPER#" in existing_content:
+            existing_content = existing_content.replace("#DEBHELPER#", content)
+        else:
+            existing_content += f"\n{content}"
+        with open(script_path, "w") as file:
+            file.write(existing_content)
 
 
 def _build_package(arguments: Namespace, workspace_dir: str, build_dir: str) -> Generator[str, None, None]:
     debian_dir = f"{build_dir}/debian"
 
-    _override_architecture(arguments.architecture, debian_dir)
+    override_architecture(arguments.architecture, debian_dir)
 
     if service := arguments.service_file:
         service_file = get_absolute_path(service, workspace_dir)
         shutil.copy(service_file, debian_dir)
 
-    if not arguments.extra_files:
-        arguments.extra_files = []
     if pre_install := arguments.preinst_file:
-        arguments.extra_files.append(pre_install)
+        shutil.copy(pre_install, f"{debian_dir}/preinst")
     if post_install := arguments.postinst_file:
-        arguments.extra_files.append(post_install)
+        shutil.copy(post_install, f"{debian_dir}/postinst")
     if pre_remove := arguments.prerm_file:
-        arguments.extra_files.append(pre_remove)
+        shutil.copy(pre_remove, f"{debian_dir}/prerm")
     if post_remove := arguments.postrm_file:
-        arguments.extra_files.append(post_remove)
+        shutil.copy(post_remove, f"{debian_dir}/postrm")
 
     if arguments.extra_files:
         for item in arguments.extra_files:
@@ -128,17 +136,79 @@ def _build_package(arguments: Namespace, workspace_dir: str, build_dir: str) -> 
             for file in glob.glob(path):
                 shutil.copy(file, debian_dir)
 
+    package_name = extract_package_name(workspace_dir)
+    _setup_rules(build_dir, package_name)
+    _setup_lifecycle_scripts(build_dir, package_name)
+
     command = ["dpkg-buildpackage", "-rfakeroot", "-us", "-uc", "-ui", "-b"]
 
     return run_command(build_dir, command, r".*'\.\./(.+\.deb)'")
 
 
-def _override_architecture(architecture: str, debian_dir: str) -> None:
-    with FileInput(f"{debian_dir}/control", inplace=True) as file:
-        for line in file:
-            if 'Architecture:' in line:
-                line = f'Architecture: {architecture}\n'
-            print(line, end='')
+def _get_post_install_script(package_name: str, version: str) -> str:
+    return f"""setup_venv() {{
+    :
+    mkdir -p /opt/effective-range/venvs/
+    
+    if [ ! -d /opt/effective-range/venvs/{package_name} ]; then
+        echo "Creating virtualenv for {package_name}"
+        python3 -m venv --system-site-packages /opt/effective-range/venvs/{package_name}
+    else
+        echo "Virtualenv for {package_name} already exists, skipping creation."
+    fi
+    
+    /opt/effective-range/venvs/{package_name}/bin/pip install --upgrade /opt/effective-range/dist/{package_name}/*{version}*.whl
+    for bin in $(find /opt/effective-range/venvs/{package_name}/bin/ -type f -name er-\*)
+    do
+        ln -vfs $bin /usr/local/bin/$(basename $bin)
+    done
+    mkdir -p /etc/effective-range/{package_name}/
+    ln -vfs /opt/effective-range/venvs/{package_name}/config/{package_name}.conf.default /etc/effective-range/{package_name}/{package_name}.conf.default
+}}
+
+if [ "${{1}}" = "configure" -a -z "${{2}}" ] || \
+   [ "${{1}}" = "abort-remove" ]
+then
+    # Fresh install or abort-remove
+    setup_venv
+    mkdir -p /var/log/effective-range/{package_name}
+    mkdir -p /var/run/effective-range/{package_name}
+elif [ "${{1}}" = "configure" -a -n "${{2}}" ]
+then
+    # Upgrade
+    upgradeFromVersion="${{2}}"
+    setup_venv
+elif echo "${{1}}" | grep -E -q "(abort|fail)"
+then
+    echo "Failed to install before the post-installation script was run." >&2
+    exit 1
+fi
+
+#DEBHELPER#
+"""
+
+
+def _get_pre_remove_script(package_name: str) -> str:
+    return f"""#DEBHELPER#
+
+if [ "${{1}}" = "remove" -a -z "${{2}}" ]
+then
+    # Fresh remove
+    for bin in $(find /opt/effective-range/venvs/{package_name}/bin/ -type f -name er-\*)
+    do
+        rm -vf /usr/local/bin/$(basename $bin)
+    done
+    rm -vf  /opt/effective-range/{package_name}/config
+elif [ "${{1}}" = "upgrade" ]
+then
+    # Executed before the old version is removed upon upgrade.
+    exit 0
+elif echo "${{1}}" | grep -E -q "(fail|abort)"
+then
+    echo "Failed to install before the pre-removal script was run." >&2
+    exit 1
+fi
+"""
 
 
 def _get_arguments() -> Namespace:

@@ -5,17 +5,16 @@
 # SPDX-License-Identifier: MIT
 
 import glob
-import re
 import shutil
 import sys
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, Namespace
-from fileinput import FileInput
 from os.path import abspath, dirname
 from typing import Generator
 
 sys.path.insert(0, dirname(abspath(__file__)))
 
-from pack_common import check_workspace, run_command, get_absolute_path, replace_in_file
+from pack_common import check_workspace, run_command, get_absolute_path, replace_in_file, extract_package_name, \
+    override_architecture
 
 
 def main() -> None:
@@ -43,7 +42,7 @@ def main() -> None:
 def _create_sources(
         arguments: Namespace, workspace_dir: str, output_dir: str
 ) -> Generator[str, None, None]:
-    package_name = _extract_package_name(workspace_dir)
+    package_name = extract_package_name(workspace_dir)
 
     command_arguments = [
         "--package3",
@@ -72,26 +71,12 @@ def _create_sources(
     return run_command(workspace_dir, command, r"copying setup.py -> (.+)")
 
 
-def _extract_package_name(workspace_dir: str) -> str:
-    with open(f"{workspace_dir}/setup.py", "r") as file:
-        setup_code = file.read()
-
-    pattern = r'name\s*=\s*[\'"]([^\'"]+)[\'"]'
-
-    match = re.search(pattern, setup_code)
-
-    if match:
-        return match.group(1)
-    else:
-        return workspace_dir.split("/")[-1]
-
-
 def _build_package(
         arguments: Namespace, workspace_dir: str, build_dir: str
 ) -> Generator[str, None, None]:
     debian_dir = f"{build_dir}/debian"
 
-    _override_architecture(arguments.architecture, debian_dir)
+    override_architecture(arguments.architecture, debian_dir)
 
     if arguments.dh_virtualenv_arguments:
         _add_dh_virtualenv_arguments(arguments, debian_dir)
@@ -123,14 +108,6 @@ def _build_package(
     command = ["DEB_BUILD_OPTIONS=noautodbgsym", "dpkg-buildpackage", "-rfakeroot", "-us", "-uc", "-ui", "-b"]
 
     return run_command(build_dir, command, r".*'\.\./(.+\.deb)'")
-
-
-def _override_architecture(architecture: str, debian_dir: str) -> None:
-    with FileInput(f"{debian_dir}/control", inplace=True) as file:
-        for line in file:
-            if 'Architecture:' in line:
-                line = f'Architecture: {architecture}\n'
-            print(line, end='')
 
 
 def _add_dh_virtualenv_arguments(arguments: Namespace, debian_dir: str) -> None:
