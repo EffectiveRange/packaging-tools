@@ -76,6 +76,9 @@ def _run_script(arguments: Namespace, command: list[str]) -> None:
     if arguments.output_dir:
         command.extend(["-o", arguments.output_dir])
 
+    if arguments.target:
+        command.extend(["-t", arguments.target])
+
     result = subprocess.run(command, text=True, stdout=subprocess.PIPE)
 
     if result.returncode:
@@ -118,7 +121,7 @@ def _get_arguments() -> Namespace:
                         default="setup.cfg")
     parser.add_argument("-p", "--python-bin", help="python executable to use", default="python3")
     parser.add_argument("-o", "--output-dir", help="package output directory")
-
+    parser.add_argument("-t", "--target", help="target architecture")
     parser.add_argument("workspace_dir", help="workspace directory where setup.py is located")
     return parser.parse_args()
 

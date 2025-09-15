@@ -6,6 +6,7 @@
 
 import glob
 import shutil
+import subprocess
 import sys
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, Namespace
 from os.path import abspath, dirname
@@ -56,6 +57,11 @@ def _create_sources(
 
     if arguments.service_file:
         command_arguments.append("--with-dh-systemd")
+
+    if shutil.which("dpkgdeps"):
+        depends_command = f"dpkgdeps --arch {arguments.target} --debdeps {workspace_dir}".split()
+        if depends := subprocess.check_output(depends_command).decode("utf-8").strip():
+            command_arguments.append(f"--depends3 {depends}")
 
     command = [
         arguments.python_bin,
@@ -223,6 +229,7 @@ def _get_arguments() -> Namespace:
     parser.add_argument("--postrm-file", help="postrm file path")
     parser.add_argument("-e", "--extra-files", help="add extra files into the debian folder before build",
                         action="append")
+    parser.add_argument("-t", "--target", help="target architecture", default="amd64")
     parser.add_argument("-A", "--architecture", help="control file architecture", default="any")
     parser.add_argument("workspace_dir", help="workspace directory where setup.py is located")
     return parser.parse_known_args()[0]
