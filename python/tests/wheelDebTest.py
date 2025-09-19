@@ -1,3 +1,4 @@
+import os
 import shutil
 import unittest
 from unittest import TestCase
@@ -35,6 +36,50 @@ class WheelDebTest(TestCase):
         self.assertEqual(0, result.returncode)
         self.assertEqual(
             f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb\n", result.stdout
+        )
+        self.assertTrue(check_files_exist(result.stdout))
+
+    def test_wheel_deb_when_relative_output_dir_specified(self):
+        # Given
+        output_dir = (
+            "tests/test_root/etc/dist"
+            if os.path.exists("tests")
+            else "test_root/etc/dist"
+        )
+        command = [
+            f"{RESOURCE_ROOT}/pack_wheel-deb",
+            TEST_PROJECT_ROOT,
+            "-o",
+            output_dir,
+        ]
+
+        # When
+        result = run_command(command)
+
+        # Then
+        self.assertEqual(0, result.returncode)
+        self.assertEqual(
+            f"{os.getcwd()}/{output_dir}/test-project_1.0.0-1_amd64.deb\n", result.stdout
+        )
+        self.assertTrue(check_files_exist(result.stdout))
+
+    def test_wheel_deb_when_absolute_output_dir_specified(self):
+        # Given
+        command = [
+            f"{RESOURCE_ROOT}/pack_wheel-deb",
+            TEST_PROJECT_ROOT,
+            "-o",
+            f"{TEST_FILE_SYSTEM_ROOT}/etc/dist",
+        ]
+
+        # When
+        result = run_command(command)
+
+        # Then
+        self.assertEqual(0, result.returncode)
+        self.assertEqual(
+            f"{TEST_FILE_SYSTEM_ROOT}/etc/dist/test-project_1.0.0-1_amd64.deb\n",
+            result.stdout,
         )
         self.assertTrue(check_files_exist(result.stdout))
 
@@ -166,6 +211,22 @@ class WheelDebTest(TestCase):
                 ],
             )
         )
+
+    def test_propagates_return_code_of_command(self):
+        # Given
+        command = [
+            f"{RESOURCE_ROOT}/pack_wheel-deb",
+            TEST_PROJECT_ROOT,
+            "-p",
+            "/invalid/path",
+        ]
+
+        # When
+        result = run_command(command)
+
+        # Then
+        self.assertEqual(127, result.returncode)
+        self.assertEqual("", result.stdout)
 
 
 if __name__ == "__main__":

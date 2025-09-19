@@ -28,6 +28,9 @@ def main() -> None:
 
     output_dir = f"{workspace_dir}/dist"
 
+    if arguments.output_dir:
+        output_dir = abspath(arguments.output_dir)
+
     results = _create_sources(arguments, workspace_dir, output_dir)
 
     build_dir = f"{output_dir}/{next(results)}".replace(".dev", "~dev")
