@@ -12,11 +12,10 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, Namespace
 from os.path import abspath, dirname
 from typing import Generator
 
-from pack_common import extract_version
-
 sys.path.insert(0, dirname(abspath(__file__)))
 
-from pack_common import check_workspace, run_command, get_absolute_path, extract_package_name, override_architecture
+from pack_common import check_workspace, run_command, get_absolute_path, extract_package_name, extract_version, \
+    override_architecture
 
 
 def main() -> None:
