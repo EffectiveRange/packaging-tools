@@ -16,7 +16,7 @@ from utils import (
 )
 
 
-class DhVirtualenvTest(TestCase):
+class WheelDebTest(TestCase):
 
     def setUp(self):
         delete_directory(TEST_FILE_SYSTEM_ROOT)
@@ -25,9 +25,9 @@ class DhVirtualenvTest(TestCase):
         )
         print()
 
-    def test_dh_virtualenv_when_no_output_dir_specified(self):
+    def test_wheel_deb_when_no_output_dir_specified(self):
         # Given
-        command = [f"{RESOURCE_ROOT}/pack_dh-virtualenv", TEST_PROJECT_ROOT]
+        command = [f"{RESOURCE_ROOT}/pack_wheel-deb", TEST_PROJECT_ROOT]
 
         # When
         result = run_command(command)
@@ -39,7 +39,7 @@ class DhVirtualenvTest(TestCase):
         )
         self.assertTrue(check_files_exist(result.stdout))
 
-    def test_dh_virtualenv_when_relative_output_dir_specified(self):
+    def test_wheel_deb_when_relative_output_dir_specified(self):
         # Given
         output_dir = (
             "tests/test_root/etc/dist"
@@ -47,7 +47,7 @@ class DhVirtualenvTest(TestCase):
             else "test_root/etc/dist"
         )
         command = [
-            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
+            f"{RESOURCE_ROOT}/pack_wheel-deb",
             TEST_PROJECT_ROOT,
             "-o",
             output_dir,
@@ -63,10 +63,10 @@ class DhVirtualenvTest(TestCase):
         )
         self.assertTrue(check_files_exist(result.stdout))
 
-    def test_dh_virtualenv_when_absolute_output_dir_specified(self):
+    def test_wheel_deb_when_absolute_output_dir_specified(self):
         # Given
         command = [
-            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
+            f"{RESOURCE_ROOT}/pack_wheel-deb",
             TEST_PROJECT_ROOT,
             "-o",
             f"{TEST_FILE_SYSTEM_ROOT}/etc/dist",
@@ -83,29 +83,10 @@ class DhVirtualenvTest(TestCase):
         )
         self.assertTrue(check_files_exist(result.stdout))
 
-    def test_dh_virtualenv_when_dh_virtualenv_arguments_specified(self):
+    def test_wheel_deb_when_architecture_specified(self):
         # Given
         command = [
-            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
-            TEST_PROJECT_ROOT,
-            "-d=--use-system-packages",
-        ]
-
-        # When
-        result = run_command(command)
-
-        # Then
-        self.assertEqual(0, result.returncode)
-        self.assertEqual(
-            f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb\n", result.stdout
-        )
-        self.assertTrue(check_files_exist(result.stdout))
-        self.assertTrue("dh_virtualenv --use-system-packages --python python3" in result.stderr)
-
-    def test_dh_virtualenv_when_architecture_specified(self):
-        # Given
-        command = [
-            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
+            f"{RESOURCE_ROOT}/pack_wheel-deb",
             TEST_PROJECT_ROOT,
             "-A",
             "all",
@@ -126,30 +107,10 @@ class DhVirtualenvTest(TestCase):
             )
         )
 
-    def test_dh_virtualenv_when_shlibdeps_parameters_specified(self):
+    def test_wheel_deb_when_service_file_specified(self):
         # Given
         command = [
-            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
-            TEST_PROJECT_ROOT,
-            "-S",
-            "\"-ldebian/test-project/opt/venvs/test-project/lib\"",
-        ]
-
-        # When
-        result = run_command(command)
-
-        # Then
-        self.assertEqual(0, result.returncode)
-        self.assertEqual(
-            f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb\n", result.stdout
-        )
-        self.assertTrue(check_files_exist(result.stdout))
-        self.assertTrue("dh_shlibdeps -- -ldebian/test-project/opt/venvs/test-project/lib" in result.stderr)
-
-    def test_dh_virtualenv_when_service_file_specified(self):
-        # Given
-        command = [
-            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
+            f"{RESOURCE_ROOT}/pack_wheel-deb",
             TEST_PROJECT_ROOT,
             "-s",
             f"{TEST_PROJECT_ROOT}/service/test-project.service",
@@ -171,10 +132,10 @@ class DhVirtualenvTest(TestCase):
             )
         )
 
-    def test_dh_virtualenv_when_lifecycle_files_specified(self):
+    def test_wheel_deb_when_lifecycle_files_specified(self):
         # Given
         command = [
-            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
+            f"{RESOURCE_ROOT}/pack_wheel-deb",
             TEST_PROJECT_ROOT,
             "--preinst-file",
             f"{TEST_PROJECT_ROOT}/scripts/test-project.preinst",
@@ -207,10 +168,10 @@ class DhVirtualenvTest(TestCase):
             )
         )
 
-    def test_dh_virtualenv_when_service_and_lifecycle_files_specified(self):
+    def test_wheel_deb_when_service_and_lifecycle_files_specified(self):
         # Given
         command = [
-            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
+            f"{RESOURCE_ROOT}/pack_wheel-deb",
             TEST_PROJECT_ROOT,
             "-s",
             f"{TEST_PROJECT_ROOT}/service/test-project.service",
@@ -239,72 +200,6 @@ class DhVirtualenvTest(TestCase):
                 "lib/systemd/system/test-project.service",
             )
         )
-        self.assertTrue(
-            check_files_matches_in_deb(
-                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb",
-                [
-                    ("preinst", "installing test-project"),
-                    ("postinst", "test-project installed"),
-                    ("prerm", "removing test-project"),
-                    ("postrm", "test-project removed"),
-                ],
-            )
-        )
-
-    def test_dh_virtualenv_when_extra_files_specified(self):
-        # Given
-        command = [
-            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
-            TEST_PROJECT_ROOT,
-            "-e",
-            f"{TEST_PROJECT_ROOT}/scripts/test-project.preinst",
-            "-e",
-            f"{TEST_PROJECT_ROOT}/scripts/test-project.postinst",
-            "-e",
-            f"{TEST_PROJECT_ROOT}/scripts/test-project.prerm",
-            "-e",
-            f"{TEST_PROJECT_ROOT}/scripts/test-project.postrm",
-        ]
-
-        # When
-        result = run_command(command)
-
-        # Then
-        self.assertEqual(0, result.returncode)
-        self.assertEqual(
-            f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb\n", result.stdout
-        )
-        self.assertTrue(check_files_exist(result.stdout))
-        self.assertTrue(
-            check_files_matches_in_deb(
-                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb",
-                [
-                    ("preinst", "installing test-project"),
-                    ("postinst", "test-project installed"),
-                    ("prerm", "removing test-project"),
-                    ("postrm", "test-project removed"),
-                ],
-            )
-        )
-
-    def test_dh_virtualenv_when_extra_files_specified_with_wildcard(self):
-        # Given
-        command = [
-            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
-            TEST_PROJECT_ROOT,
-            "-e",
-            f"{TEST_PROJECT_ROOT}/scripts/*",
-        ]
-
-        # When
-        result = run_command(command)
-
-        # Then
-        self.assertEqual(0, result.returncode)
-        self.assertEqual(
-            f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb\n", result.stdout
-        )
-        self.assertTrue(check_files_exist(result.stdout))
         self.assertTrue(
             check_files_matches_in_deb(
                 f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb",
@@ -320,7 +215,7 @@ class DhVirtualenvTest(TestCase):
     def test_propagates_return_code_of_command(self):
         # Given
         command = [
-            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
+            f"{RESOURCE_ROOT}/pack_wheel-deb",
             TEST_PROJECT_ROOT,
             "-p",
             "/invalid/path",

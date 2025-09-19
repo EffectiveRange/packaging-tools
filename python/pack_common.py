@@ -6,6 +6,7 @@ import re
 import sys
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
+from fileinput import FileInput
 from functools import partial
 from os.path import exists
 from subprocess import PIPE, Popen
@@ -78,3 +79,39 @@ def replace_in_file(file_path: str, pattern: str, replacement: str) -> None:
 
     with open(file_path, 'w') as file:
         file.write(replaced_content)
+
+
+def extract_package_name(workspace_dir: str) -> str:
+    with open(f"{workspace_dir}/setup.py", "r") as file:
+        setup_code = file.read()
+
+    pattern = r'name\s*=\s*[\'"]([^\'"]+)[\'"]'
+
+    match = re.search(pattern, setup_code)
+
+    if match:
+        return match.group(1)
+    else:
+        return workspace_dir.split("/")[-1]
+
+
+def extract_version(workspace_dir: str) -> str:
+    with open(f"{workspace_dir}/setup.py", "r") as file:
+        setup_code = file.read()
+
+    pattern = r'version\s*=\s*[\'"]([^\'"]+)[\'"]'
+
+    match = re.search(pattern, setup_code)
+
+    if match:
+        return match.group(1)
+    else:
+        return "0.0.0"
+
+
+def override_architecture(architecture: str, debian_dir: str) -> None:
+    with FileInput(f"{debian_dir}/control", inplace=True) as file:
+        for line in file:
+            if 'Architecture:' in line:
+                line = f'Architecture: {architecture}\n'
+            print(line, end='')

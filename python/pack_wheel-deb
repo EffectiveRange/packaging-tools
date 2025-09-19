@@ -1,0 +1,241 @@
+#!/usr/bin/env python3
+
+# SPDX-FileCopyrightText: 2024 Ferenc Nandor Janky <ferenj@effective-range.com>
+# SPDX-FileCopyrightText: 2024 Attila Gombos <attila.gombos@effective-range.com>
+# SPDX-License-Identifier: MIT
+
+import glob
+import shutil
+import subprocess
+import sys
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, Namespace
+from os.path import abspath, dirname
+from typing import Generator
+
+sys.path.insert(0, dirname(abspath(__file__)))
+
+from pack_common import check_workspace, run_command, get_absolute_path, extract_package_name, extract_version, \
+    override_architecture
+
+
+def main() -> None:
+    arguments = _get_arguments()
+
+    workspace_dir = abspath(arguments.workspace_dir)
+
+    check_workspace(workspace_dir)
+
+    output_dir = f"{workspace_dir}/dist"
+
+    if arguments.output_dir:
+        output_dir = abspath(arguments.output_dir)
+
+    results = _create_sources(arguments, workspace_dir, output_dir)
+
+    build_dir = f"{output_dir}/{next(results)}".replace(".dev", "~dev")
+
+    results = _build_package(arguments, workspace_dir, build_dir)
+
+    for result in results:
+        print(f"{output_dir}/{result}")
+
+
+def _create_sources(
+        arguments: Namespace, workspace_dir: str, output_dir: str
+) -> Generator[str, None, None]:
+    package_name = extract_package_name(workspace_dir)
+
+    command_arguments = [
+        "--package3",
+        package_name,
+        "--dist-dir",
+        output_dir,
+        "--compat",
+        "10",
+    ]
+
+    if arguments.arguments:
+        command_arguments.extend(arguments.arguments.split())
+
+    if arguments.service_file:
+        command_arguments.append("--with-dh-systemd")
+
+    if shutil.which("dpkgdeps"):
+        depends_command = f"dpkgdeps --arch {arguments.target} --debdeps {workspace_dir}".split()
+        if depends := subprocess.check_output(depends_command).decode("utf-8").strip():
+            command_arguments.append(f"--depends3 {depends}")
+
+    command = [
+        arguments.python_bin,
+        "setup.py",
+        "--command-packages=stdeb.command",
+        "sdist_dsc",
+        *command_arguments,
+    ]
+
+    return run_command(workspace_dir, command, r"copying setup.py -> (.+)")
+
+
+def _setup_rules(build_dir: str, package_name: str) -> None:
+    with open(f"{build_dir}/debian/rules", "w") as file:
+        file.write(f"""#!/usr/bin/make -f
+
+%:
+\tdh $@ --with systemd
+
+override_dh_auto_clean:
+\tpython3 setup.py clean -a
+\trm -rf build dist *.egg-info
+
+override_dh_auto_build:
+\tpython3 setup.py bdist_wheel
+
+override_dh_auto_install:
+\tmkdir -p debian/{package_name}/opt/effective-range/dist/{package_name}
+\tcp dist/*.whl debian/{package_name}/opt/effective-range/dist/{package_name}
+""")
+
+
+def _setup_lifecycle_scripts(build_dir: str, package_name: str) -> None:
+    version = extract_version(build_dir)
+    post_install = _get_post_install_script(package_name, version)
+    _setup_lifecycle_script(f"{build_dir}/debian/postinst", post_install)
+
+    pre_remove = _get_pre_remove_script(package_name)
+    _setup_lifecycle_script(f"{build_dir}/debian/prerm", pre_remove)
+
+
+def _setup_lifecycle_script(script_path: str, content: str) -> None:
+    if not glob.glob(script_path):
+        with open(script_path, "w") as file:
+            file.write(f"#!/bin/bash\n\n{content}")
+    else:
+        with open(script_path, "r") as file:
+            existing_content = file.read()
+        if "#DEBHELPER#" in existing_content:
+            existing_content = existing_content.replace("#DEBHELPER#", content)
+        else:
+            existing_content += f"\n{content}"
+        with open(script_path, "w") as file:
+            file.write(existing_content)
+
+
+def _build_package(arguments: Namespace, workspace_dir: str, build_dir: str) -> Generator[str, None, None]:
+    debian_dir = f"{build_dir}/debian"
+
+    override_architecture(arguments.architecture, debian_dir)
+
+    if service := arguments.service_file:
+        service_file = get_absolute_path(service, workspace_dir)
+        shutil.copy(service_file, debian_dir)
+
+    if pre_install := arguments.preinst_file:
+        shutil.copy(pre_install, f"{debian_dir}/preinst")
+    if post_install := arguments.postinst_file:
+        shutil.copy(post_install, f"{debian_dir}/postinst")
+    if pre_remove := arguments.prerm_file:
+        shutil.copy(pre_remove, f"{debian_dir}/prerm")
+    if post_remove := arguments.postrm_file:
+        shutil.copy(post_remove, f"{debian_dir}/postrm")
+
+    if arguments.extra_files:
+        for item in arguments.extra_files:
+            path = get_absolute_path(item, workspace_dir)
+            for file in glob.glob(path):
+                shutil.copy(file, debian_dir)
+
+    package_name = extract_package_name(workspace_dir)
+    _setup_rules(build_dir, package_name)
+    _setup_lifecycle_scripts(build_dir, package_name)
+
+    command = ["dpkg-buildpackage", "-rfakeroot", "-us", "-uc", "-ui", "-b"]
+
+    return run_command(build_dir, command, r".*'\.\./(.+\.deb)'")
+
+
+def _get_post_install_script(package_name: str, version: str) -> str:
+    return f"""setup_venv() {{
+    :
+    mkdir -p /opt/effective-range/venvs/
+    
+    if [ ! -d /opt/effective-range/venvs/{package_name} ]; then
+        echo "Creating virtualenv for {package_name}"
+        python3 -m venv --system-site-packages /opt/effective-range/venvs/{package_name}
+    else
+        echo "Virtualenv for {package_name} already exists, skipping creation."
+    fi
+    
+    /opt/effective-range/venvs/{package_name}/bin/pip install --upgrade /opt/effective-range/dist/{package_name}/*{version}*.whl
+    for bin in $(find /opt/effective-range/venvs/{package_name}/bin/ -type f -name er-\*)
+    do
+        ln -vfs $bin /usr/local/bin/$(basename $bin)
+    done
+    mkdir -p /etc/effective-range/{package_name}/
+    ln -vfs /opt/effective-range/venvs/{package_name}/config/{package_name}.conf.default /etc/effective-range/{package_name}/{package_name}.conf.default
+}}
+
+if [ "${{1}}" = "configure" -a -z "${{2}}" ] || \
+   [ "${{1}}" = "abort-remove" ]
+then
+    # Fresh install or abort-remove
+    setup_venv
+    mkdir -p /var/log/effective-range/{package_name}
+    mkdir -p /var/run/effective-range/{package_name}
+elif [ "${{1}}" = "configure" -a -n "${{2}}" ]
+then
+    # Upgrade
+    upgradeFromVersion="${{2}}"
+    setup_venv
+elif echo "${{1}}" | grep -E -q "(abort|fail)"
+then
+    echo "Failed to install before the post-installation script was run." >&2
+    exit 1
+fi
+
+#DEBHELPER#
+"""
+
+
+def _get_pre_remove_script(package_name: str) -> str:
+    return f"""#DEBHELPER#
+
+if [ "${{1}}" = "remove" -a -z "${{2}}" ]
+then
+    # Fresh remove
+    for bin in $(find /opt/effective-range/venvs/{package_name}/bin/ -type f -name er-\*)
+    do
+        rm -vf /usr/local/bin/$(basename $bin)
+    done
+    rm -vf  /opt/effective-range/{package_name}/config
+elif [ "${{1}}" = "upgrade" ]
+then
+    # Executed before the old version is removed upon upgrade.
+    exit 0
+elif echo "${{1}}" | grep -E -q "(fail|abort)"
+then
+    echo "Failed to install before the pre-removal script was run." >&2
+    exit 1
+fi
+"""
+
+
+def _get_arguments() -> Namespace:
+    parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
+    parser.add_argument("-a", "--arguments", help="extra arguments passed to stdeb")
+    parser.add_argument("-p", "--python-bin", help="python executable to use", default="python3")
+    parser.add_argument("-o", "--output-dir", help="package output directory")
+    parser.add_argument("-s", "--service-file", help="service unit file path")
+    parser.add_argument("--preinst-file", help="preinst file path")
+    parser.add_argument("--postinst-file", help="postinst file path")
+    parser.add_argument("--prerm-file", help="prerm file path")
+    parser.add_argument("--postrm-file", help="postrm file path")
+    parser.add_argument("-e", "--extra-files", help="add extra files into the debian folder before build",
+                        action="append")
+    parser.add_argument("-t", "--target", help="target architecture", default="amd64")
+    parser.add_argument("-A", "--architecture", help="control file architecture", default="any")
+    parser.add_argument("workspace_dir", help="workspace directory where setup.py is located")
+    return parser.parse_known_args()[0]
+
+
+if __name__ == "__main__":
+    main()
