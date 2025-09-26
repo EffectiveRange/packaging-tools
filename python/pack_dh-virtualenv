@@ -13,8 +13,8 @@ from typing import Generator
 
 sys.path.insert(0, dirname(abspath(__file__)))
 
-from pack_common import check_workspace, run_command, get_absolute_path, replace_in_file, extract_package_name, \
-    override_architecture
+from pack_common import check_workspace, get_absolute_path, replace_in_file, extract_package_name, \
+    override_architecture, is_cross_build, rsync_to_buildroot, rsync_from_buildroot, run_build_command
 
 
 def main() -> None:
@@ -29,19 +29,29 @@ def main() -> None:
     if arguments.output_dir:
         output_dir = abspath(arguments.output_dir)
 
-    results = _create_sources(arguments, workspace_dir, output_dir)
+    cross_build = is_cross_build(arguments.target)
+
+    if cross_build:
+        rsync_to_buildroot(workspace_dir)
+
+    results = _create_sources(arguments, workspace_dir, output_dir, cross_build)
 
     build_dir = f"{output_dir}/{next(results)}".replace(".dev", "~dev")
 
-    results = _build_package(arguments, workspace_dir, build_dir)
+    if cross_build:
+        rsync_from_buildroot(build_dir)
+
+    results = _build_package(arguments, workspace_dir, build_dir, cross_build)
 
     for result in results:
         print(f"{output_dir}/{result}")
 
+    if cross_build:
+        rsync_from_buildroot(output_dir)
 
-def _create_sources(
-        arguments: Namespace, workspace_dir: str, output_dir: str
-) -> Generator[str, None, None]:
+
+def _create_sources(arguments: Namespace, workspace_dir: str, output_dir: str, cross_build: bool) \
+        -> Generator[str, None, None]:
     package_name = extract_package_name(workspace_dir)
 
     command_arguments = [
@@ -68,15 +78,20 @@ def _create_sources(
         *command_arguments,
     ]
 
-    return run_command(workspace_dir, command, r"copying setup.py -> (.+)")
+    return run_build_command(cross_build, workspace_dir, command, r"copying setup.py -> (.+)")
 
 
-def _build_package(
-        arguments: Namespace, workspace_dir: str, build_dir: str
-) -> Generator[str, None, None]:
+def _build_package(arguments: Namespace, workspace_dir: str, build_dir: str, cross_build: bool) \
+        -> Generator[str, None, None]:
+    if cross_build:
+        workspace_dir = f"/var/chroot/buildroot{workspace_dir}"
+        build_dir = f"/var/chroot/buildroot{build_dir}"
+
     debian_dir = f"{build_dir}/debian"
 
     override_architecture(arguments.architecture, debian_dir)
+
+    _set_no_automatic_dbgsym(debian_dir)
 
     if arguments.dh_virtualenv_arguments:
         _add_dh_virtualenv_arguments(arguments, debian_dir)
@@ -105,9 +120,9 @@ def _build_package(
             for file in glob.glob(path):
                 shutil.copy(file, debian_dir)
 
-    command = ["DEB_BUILD_OPTIONS=noautodbgsym", "dpkg-buildpackage", "-rfakeroot", "-us", "-uc", "-ui", "-b"]
+    command = ["dpkg-buildpackage", "-rfakeroot", "-us", "-uc", "-ui", "-b"]
 
-    return run_command(build_dir, command, r".*'\.\./(.+\.deb)'")
+    return run_build_command(cross_build, build_dir, command, r".*'\.\./(.+\.deb)'")
 
 
 def _add_dh_virtualenv_arguments(arguments: Namespace, debian_dir: str) -> None:
@@ -125,11 +140,19 @@ def _add_shlidbeps_parameters(arguments: Namespace, debian_dir: str) -> None:
 """)
 
 
+def _set_no_automatic_dbgsym(debian_dir: str) -> None:
+    with open(f"{debian_dir}/rules", "a") as file:
+        file.write(f"""override_dh_strip:
+\tdh_strip --no-automatic-dbgsym
+""")
+
+
 def _get_arguments() -> Namespace:
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument("-a", "--arguments", help="extra arguments passed to stdeb")
     parser.add_argument("-p", "--python-bin", help="python executable to use", default="python3")
     parser.add_argument("-o", "--output-dir", help="package output directory")
+    parser.add_argument("-t", "--target", help="target architecture")
     parser.add_argument("-s", "--service-file", help="service unit file path")
     parser.add_argument("--preinst-file", help="preinst file path")
     parser.add_argument("--postinst-file", help="postinst file path")
