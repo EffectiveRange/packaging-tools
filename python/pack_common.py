@@ -10,7 +10,7 @@ from fileinput import FileInput
 from functools import partial
 from os.path import exists
 from subprocess import PIPE, Popen
-from typing import Generator, Union
+from typing import Generator, Union, Optional
 
 
 def check_workspace(workspace_dir: str) -> None:
@@ -34,13 +34,13 @@ def get_build_architecture() -> str:
         return stdout.strip()
 
 
-def is_cross_build(target_architecture: str | None) -> bool:
+def is_cross_build(target_architecture: Optional[str]) -> bool:
     build_architecture = get_build_architecture()
     target_architecture = target_architecture or build_architecture
     return target_architecture != build_architecture
 
 
-def rsync(source: str, destination: str, exclude: list[str] | None = None) -> None:
+def rsync(source: str, destination: str, exclude: Optional[list[str]] = None) -> None:
     command = ["rsync", "-av", "--mkpath"]
 
     if exclude is not None:
@@ -59,11 +59,11 @@ def rsync(source: str, destination: str, exclude: list[str] | None = None) -> No
             exit(process.returncode)
 
 
-def rsync_to_buildroot(workspace_dir: str, exclude=None) -> None:
+def rsync_to_buildroot(workspace_dir: str, exclude: Optional[list[str]] = None) -> None:
     rsync(f"{workspace_dir}/", f"/var/chroot/buildroot{workspace_dir}/", exclude)
 
 
-def rsync_from_buildroot(workspace_dir: str, exclude=None) -> None:
+def rsync_from_buildroot(workspace_dir: str, exclude: Optional[list[str]] = None) -> None:
     rsync(f"/var/chroot/buildroot{workspace_dir}/", f"{workspace_dir}/", exclude)
 
 
