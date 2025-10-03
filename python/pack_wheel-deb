@@ -14,8 +14,8 @@ from typing import Generator
 
 sys.path.insert(0, dirname(abspath(__file__)))
 
-from pack_common import check_workspace, get_absolute_path, extract_package_name, extract_version, \
-    override_architecture, run_build_command, is_cross_build, rsync_to_buildroot, rsync_from_buildroot
+from pack_common import check_workspace, get_absolute_path, extract_package_name, extract_version, run_command, \
+    override_architecture
 
 
 def main() -> None:
@@ -30,29 +30,17 @@ def main() -> None:
     if arguments.output_dir:
         output_dir = abspath(arguments.output_dir)
 
-    cross_build = is_cross_build(arguments.target)
-
-    if cross_build:
-        rsync_to_buildroot(workspace_dir)
-
-    results = _create_sources(arguments, workspace_dir, output_dir, cross_build)
+    results = _create_sources(arguments, workspace_dir, output_dir)
 
     build_dir = f"{output_dir}/{next(results)}".replace(".dev", "~dev")
 
-    if cross_build:
-        rsync_from_buildroot(build_dir)
-
-    results = _build_package(arguments, workspace_dir, build_dir, cross_build)
+    results = _build_package(arguments, workspace_dir, build_dir)
 
     for result in results:
         print(f"{output_dir}/{result}")
 
-    if cross_build:
-        rsync_from_buildroot(output_dir)
 
-
-def _create_sources(arguments: Namespace, workspace_dir: str, output_dir: str, cross_build: bool) \
-        -> Generator[str, None, None]:
+def _create_sources(arguments: Namespace, workspace_dir: str, output_dir: str) -> Generator[str, None, None]:
     package_name = extract_package_name(workspace_dir)
 
     command_arguments = [
@@ -83,7 +71,7 @@ def _create_sources(arguments: Namespace, workspace_dir: str, output_dir: str, c
         *command_arguments,
     ]
 
-    return run_build_command(cross_build, workspace_dir, command, r"copying setup.py -> (.+)")
+    return run_command(workspace_dir, command, r"copying setup.py -> (.+)")
 
 
 def _setup_rules(build_dir: str, package_name: str) -> None:
@@ -106,8 +94,8 @@ override_dh_auto_install:
 """)
 
 
-def _setup_lifecycle_scripts(build_dir: str, package_name: str) -> None:
-    version = extract_version(build_dir)
+def _setup_lifecycle_scripts(build_dir: str, package_name: str, python_bin: str) -> None:
+    version = extract_version(build_dir, python_bin)
     post_install = _get_post_install_script(package_name, version)
     _setup_lifecycle_script(f"{build_dir}/debian/postinst", post_install)
 
@@ -130,12 +118,7 @@ def _setup_lifecycle_script(script_path: str, content: str) -> None:
             file.write(existing_content)
 
 
-def _build_package(arguments: Namespace, workspace_dir: str, build_dir: str, cross_build: bool) \
-        -> Generator[str, None, None]:
-    if cross_build:
-        workspace_dir = f"/var/chroot/buildroot{workspace_dir}"
-        build_dir = f"/var/chroot/buildroot{build_dir}"
-
+def _build_package(arguments: Namespace, workspace_dir: str, build_dir: str) -> Generator[str, None, None]:
     debian_dir = f"{build_dir}/debian"
 
     override_architecture(arguments.architecture, debian_dir)
@@ -165,11 +148,11 @@ def _build_package(arguments: Namespace, workspace_dir: str, build_dir: str, cro
 
     package_name = extract_package_name(workspace_dir)
     _setup_rules(build_dir, package_name)
-    _setup_lifecycle_scripts(build_dir, package_name)
+    _setup_lifecycle_scripts(build_dir, package_name, arguments.python_bin)
 
     command = ["dpkg-buildpackage", "-rfakeroot", "-us", "-uc", "-ui", "-b"]
 
-    return run_build_command(cross_build, build_dir, command, r".*'\.\./(.+\.deb)'")
+    return run_command(build_dir, command, r".*'\.\./(.+\.deb)'")
 
 
 def _get_post_install_script(package_name: str, version: str) -> str:
