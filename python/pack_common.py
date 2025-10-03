@@ -155,7 +155,7 @@ def extract_package_name(workspace_dir: str) -> str:
         return workspace_dir.split("/")[-1]
 
 
-def extract_version(workspace_dir: str) -> str:
+def extract_version(workspace_dir: str, python_bin: str) -> str:
     with open(f"{workspace_dir}/setup.py", "r") as file:
         setup_code = file.read()
 
@@ -166,7 +166,15 @@ def extract_version(workspace_dir: str) -> str:
     if match:
         return match.group(1)
     else:
-        return "0.0.0"
+        command = f"{python_bin} -m setuptools_scm"
+        with Popen(command, cwd=workspace_dir, shell=True, text=True, stdout=PIPE, stderr=PIPE) as process:
+            stdout, stderr = process.communicate()
+
+        if process.returncode != 0:
+            print(f"Failed to get project version from SCM: {stderr.strip()}", file=sys.stderr)
+            exit(process.returncode)
+
+        return stdout.strip()
 
 
 def override_architecture(architecture: str, debian_dir: str) -> None:
