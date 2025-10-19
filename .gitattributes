@@ -1,0 +1,2 @@
+**/*.py         text eol=lf
+**/pack_*       text eol=lf
