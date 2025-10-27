@@ -135,6 +135,38 @@ class FpmDebTest(TestCase):
             )
         )
 
+    def test_fpm_deb_when_multiple_service_files_specified(self):
+        # Given
+        command = [
+            f"{RESOURCE_ROOT}/pack_fpm-deb",
+            TEST_PROJECT_ROOT,
+            f"-s {TEST_PROJECT_ROOT}/service/test-project.1.service",
+            f"-s {TEST_PROJECT_ROOT}/service/test-project.2.service",
+        ]
+
+        # When
+        result = run_command(command)
+
+        # Then
+        self.assertEqual(0, result.returncode)
+        self.assertEqual(
+            f"{TEST_PROJECT_ROOT}/dist/python3-test-project_1.0.0_all.deb\n",
+            result.stdout,
+        )
+        self.assertTrue(check_files_exist(result.stdout))
+        self.assertTrue(
+            check_file_is_in_deb(
+                f"{TEST_PROJECT_ROOT}/dist/python3-test-project_1.0.0_all.deb",
+                "lib/systemd/system/test-project.1.service",
+            )
+        )
+        self.assertTrue(
+            check_file_is_in_deb(
+                f"{TEST_PROJECT_ROOT}/dist/python3-test-project_1.0.0_all.deb",
+                "lib/systemd/system/test-project.2.service",
+            )
+        )
+
     def test_fpm_deb_when_lifecycle_files_specified(self):
         # Given
         command = [

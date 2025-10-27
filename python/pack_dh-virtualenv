@@ -99,9 +99,10 @@ def _build_package(arguments: Namespace, workspace_dir: str, build_dir: str, cro
     if arguments.shlibdeps:
         _add_shlidbeps_parameters(arguments, debian_dir)
 
-    if service := arguments.service_file:
-        service_file = get_absolute_path(service, workspace_dir)
-        shutil.copy(service_file, debian_dir)
+    if services := arguments.service_file:
+        for service in services:
+            service_file = get_absolute_path(service, workspace_dir)
+            shutil.copy(service_file, debian_dir)
 
     if not arguments.extra_files:
         arguments.extra_files = []
@@ -153,13 +154,13 @@ def _get_arguments() -> Namespace:
     parser.add_argument("-p", "--python-bin", help="python executable to use", default="python3")
     parser.add_argument("-o", "--output-dir", help="package output directory")
     parser.add_argument("-t", "--target", help="target architecture")
-    parser.add_argument("-s", "--service-file", help="service unit file path")
+    parser.add_argument("-s", "--service-file", action="append", help="service unit file path")
     parser.add_argument("--preinst-file", help="preinst file path")
     parser.add_argument("--postinst-file", help="postinst file path")
     parser.add_argument("--prerm-file", help="prerm file path")
     parser.add_argument("--postrm-file", help="postrm file path")
-    parser.add_argument("-e", "--extra-files", help="add extra files into the debian folder before build",
-                        action="append")
+    parser.add_argument("-e", "--extra-files", action="append",
+                        help="add extra files into the debian folder before build")
     parser.add_argument("-d", "--dh-virtualenv-arguments", help="extra arguments passed to dh-virtualenv")
     parser.add_argument("-A", "--architecture", help="control file architecture", default="any")
     parser.add_argument("-S", "--shlibdeps", help="add dpkg-shlibdeps parameters to debian/rules")
