@@ -47,8 +47,10 @@ def main() -> None:
     os.makedirs(output_dir, exist_ok=True)
     fpm_arguments.extend(["--package", output_dir])
 
-    if service := arguments.service_file:
-        fpm_arguments.extend(["--deb-systemd", service, "--deb-systemd-enable", "--deb-systemd-auto-start"])
+    if services := arguments.service_file:
+        fpm_arguments.extend(["--deb-systemd-enable", "--deb-systemd-auto-start"])
+        for service in services:
+            fpm_arguments.extend(["--deb-systemd", service])
     if pre_install := arguments.preinst_file:
         fpm_arguments.extend(["--before-install", pre_install, "--before-upgrade", pre_install])
     if post_install := arguments.postinst_file:
@@ -72,7 +74,7 @@ def _get_arguments() -> Namespace:
     parser.add_argument("-a", "--arguments", help="extra arguments passed to fpm")
     parser.add_argument("-p", "--python-bin", help="python executable to use")
     parser.add_argument("-o", "--output-dir", help="package output directory")
-    parser.add_argument("-s", "--service-file", help="service unit file path")
+    parser.add_argument("-s", "--service-file", action="append", help="service unit file path")
     parser.add_argument("--preinst-file", help="preinst file path")
     parser.add_argument("--postinst-file", help="postinst file path")
     parser.add_argument("--prerm-file", help="prerm file path")

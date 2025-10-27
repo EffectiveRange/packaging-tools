@@ -1,5 +1,5 @@
 
-[![Test and Release](https://github.com/EffectiveRange/packaging-tools/actions/workflows/test_and_release.yml/badge.svg)](https://github.com/EffectiveRange/packaging-tools/actions/workflows/test_and_release.yml)
+[![Test and Release](https://github.com/EffectiveRange/packaging-tools/actions/workflows/ci.yaml/badge.svg)](https://github.com/EffectiveRange/packaging-tools/actions/workflows/ci.yaml)
 
 # packaging-tools
 
