@@ -82,7 +82,14 @@ def _setup_rules(build_dir: str, package_name: str, services: list[str]) -> None
         for service in services:
             service_file = service.split("/")[-1]
             service_name = service_file.split(".")[1]
-            rules += f"""\tdh_installinit --name={service_name} --no-enable --no-start\n"""
+            rules += f"\tdh_installinit --name={service_name} --no-enable --no-start\n"
+        rules += """
+override_dh_systemd_enable:
+\tdh_systemd_enable --no-enable
+
+override_dh_systemd_start:
+\tdh_systemd_start --no-start
+"""
 
     with open(f"{build_dir}/debian/rules", "w") as file:
         file.write(rules)
