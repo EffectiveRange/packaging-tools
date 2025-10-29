@@ -157,13 +157,7 @@ class FpmDebTest(TestCase):
         self.assertTrue(
             check_file_is_in_deb(
                 f"{TEST_PROJECT_ROOT}/dist/python3-test-project_1.0.0_all.deb",
-                "lib/systemd/system/test-project.1.service",
-            )
-        )
-        self.assertTrue(
-            check_file_is_in_deb(
-                f"{TEST_PROJECT_ROOT}/dist/python3-test-project_1.0.0_all.deb",
-                "lib/systemd/system/test-project.2.service",
+                ["lib/systemd/system/test-project.1.service", "lib/systemd/system/test-project.2.service"],
             )
         )
 

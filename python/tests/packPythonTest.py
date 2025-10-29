@@ -31,7 +31,8 @@ class PackPythonTest(TestCase):
         create_file(f"{TEST_FILE_SYSTEM_ROOT}/tmp/setup.cfg",
                     "[pack-python]\n"
                     "default = wheel-deb\n"
-                    "wheel-deb = -A all")
+                    "wheel-deb = -A all\n"
+                    "service = service/test-project.1.service service/test-project.2.service")
 
         command = [f"{RESOURCE_ROOT}/pack_python", TEST_PROJECT_ROOT, "-c", f"{TEST_FILE_SYSTEM_ROOT}/tmp/setup.cfg"]
 
@@ -42,6 +43,12 @@ class PackPythonTest(TestCase):
         self.assertEqual(0, result.returncode)
         self.assertEqual(f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb\n", result.stdout)
         self.assertTrue(check_files_exist(result.stdout))
+        self.assertTrue(
+            check_file_is_in_deb(
+                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb",
+                ["lib/systemd/system/1.service", "lib/systemd/system/2.service"],
+            )
+        )
 
     def test_pack_python_when_packaging_specified(self):
         # Given
