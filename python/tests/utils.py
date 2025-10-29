@@ -2,6 +2,7 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
+from typing import Union
 
 TEST_RESOURCE_ROOT = str(Path(os.path.dirname(__file__)).absolute())
 TEST_FILE_SYSTEM_ROOT = str(Path(TEST_RESOURCE_ROOT).joinpath("test_root").absolute())
@@ -51,8 +52,12 @@ def check_files_exist(file_paths: str) -> bool:
     return all_exists
 
 
-def check_file_is_in_deb(deb_file_path: str, file_path: str) -> bool:
-    return file_path in subprocess.run(["dpkg", "-c", deb_file_path], text=True, stdout=subprocess.PIPE).stdout
+def check_file_is_in_deb(deb_file_path: str, file_paths: Union[str, list[str]]) -> bool:
+    if isinstance(file_paths, str):
+        file_paths = [file_paths]
+
+    return all(file_path in subprocess.run(["dpkg", "-c", deb_file_path], text=True, stdout=subprocess.PIPE).stdout for
+               file_path in file_paths)
 
 
 def check_files_matches_in_deb(deb_file_path: str, files_and_matchers: list[tuple[str, str]]) -> bool:
