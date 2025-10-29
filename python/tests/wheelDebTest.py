@@ -155,13 +155,7 @@ class WheelDebTest(TestCase):
         self.assertTrue(
             check_file_is_in_deb(
                 f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb",
-                "lib/systemd/system/1.service",
-            )
-        )
-        self.assertTrue(
-            check_file_is_in_deb(
-                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb",
-                "lib/systemd/system/2.service",
+                ["lib/systemd/system/1.service", "lib/systemd/system/2.service"],
             )
         )
 
