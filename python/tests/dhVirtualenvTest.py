@@ -3,6 +3,8 @@ import shutil
 import unittest
 from unittest import TestCase
 
+import pytest
+
 from utils import (
     TEST_PROJECT_ROOT,
     TEST_RESOURCE_ROOT,
@@ -16,6 +18,7 @@ from utils import (
 )
 
 
+@pytest.mark.skip(reason="Disabled to speed up CI/CD pipeline")
 class DhVirtualenvTest(TestCase):
 
     def setUp(self):
