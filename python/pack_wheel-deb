@@ -32,7 +32,7 @@ def main() -> None:
 
     results = _create_sources(arguments, workspace_dir, output_dir)
 
-    build_dir = f"{output_dir}/{next(results)}".replace(".dev", "~dev")
+    build_dir = f"{output_dir}/{next(results)}"
 
     results = _build_package(arguments, workspace_dir, build_dir)
 
@@ -71,7 +71,7 @@ def _create_sources(arguments: Namespace, workspace_dir: str, output_dir: str) -
         *command_arguments,
     ]
 
-    return run_command(workspace_dir, command, r"copying setup.py -> (.+)")
+    return run_command(workspace_dir, command, r"dpkg-source: info: extracting .+ in (.+)")
 
 
 def _setup_rules(build_dir: str, package_name: str, services: list[str]) -> None:
