@@ -22,6 +22,8 @@ mkdir -p debian/usr/local/bin
 
 cp -v dist/pack_* debian/usr/local/bin
 
+chmod 755 debian/DEBIAN/preinst debian/DEBIAN/postrm
+
 VERSION="$(grep Version: debian/DEBIAN/control | cut -d' ' -f2)"
 
 PACKAGE_PATH="dist/packaging-tools_${VERSION}-1_all.deb"
@@ -32,7 +34,7 @@ DISTRIBUTIONS=$1
 
 if [ -z "$DISTRIBUTIONS" ]
 then
-  DISTRIBUTIONS="bullseye bookworm"
+  DISTRIBUTIONS="bullseye bookworm trixie"
 fi
 
 for distribution in $DISTRIBUTIONS
