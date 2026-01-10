@@ -123,3 +123,15 @@ jobs:
           files: |
             dist/*.tar.gz
             dist/*.deb
+
+
+  dispatch_downstream:
+    if: startsWith(github.ref, 'refs/tags/')
+    name: Dispatch downstream repo
+    needs: release
+    uses: EffectiveRange/ci-workflows/.github/workflows/repository-dispatch.yaml@v1_repodispatch
+    secrets: inherit
+    with:
+      downstream_repo: devc-effectiverange-baseoverlay
+      event_type: ${{ github.repository }}
+      version: ${{ github.ref_name }}    
