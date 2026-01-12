@@ -38,6 +38,7 @@ class WheelDebTest(TestCase):
             f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb\n", result.stdout
         )
         self.assertTrue(check_files_exist(result.stdout))
+        self.assertFalse(check_files_exist(f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb\n"))
 
     def test_wheel_deb_when_relative_output_dir_specified(self):
         # Given

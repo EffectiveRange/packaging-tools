@@ -115,13 +115,13 @@ class PackPythonTest(TestCase):
         )
         self.assertTrue(
             check_file_is_in_deb(
-                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb",
+                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_arm64.deb",
                 "lib/systemd/system/test-project.service",
             )
         )
         self.assertTrue(
             check_files_matches_in_deb(
-                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb",
+                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_arm64.deb",
                 [
                     ("preinst", "installing test-project"),
                     ("postinst", "test-project installed"),
