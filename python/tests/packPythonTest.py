@@ -31,7 +31,7 @@ class PackPythonTest(TestCase):
         create_file(f"{TEST_FILE_SYSTEM_ROOT}/tmp/setup.cfg",
                     "[pack-python]\n"
                     "default = wheel-deb\n"
-                    "wheel-deb = -A all\n"
+                    "wheel-deb = -t arm64\n"
                     "service = service/test-project.1.service service/test-project.2.service")
 
         command = [f"{RESOURCE_ROOT}/pack_python", TEST_PROJECT_ROOT, "-c", f"{TEST_FILE_SYSTEM_ROOT}/tmp/setup.cfg"]
@@ -41,11 +41,11 @@ class PackPythonTest(TestCase):
 
         # Then
         self.assertEqual(0, result.returncode)
-        self.assertEqual(f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb\n", result.stdout)
+        self.assertEqual(f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_arm64.deb\n", result.stdout)
         self.assertTrue(check_files_exist(result.stdout))
         self.assertTrue(
             check_file_is_in_deb(
-                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb",
+                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_arm64.deb",
                 ["lib/systemd/system/1.service", "lib/systemd/system/2.service"],
             )
         )
@@ -68,7 +68,7 @@ class PackPythonTest(TestCase):
         create_file(f"{TEST_FILE_SYSTEM_ROOT}/tmp/setup.cfg",
                     "[pack-python]\n"
                     "default = wheel-deb\n"
-                    "wheel-deb = -A all")
+                    "wheel-deb = -A amd64")
 
         command = [f"{RESOURCE_ROOT}/pack_python", TEST_PROJECT_ROOT,
                    "-c", f"{TEST_FILE_SYSTEM_ROOT}/tmp/setup.cfg",
@@ -80,12 +80,12 @@ class PackPythonTest(TestCase):
         # Then
         self.assertEqual(0, result.returncode)
         self.assertEqual(f"{TEST_PROJECT_ROOT}/dist/test_project-1.0.0-py3-none-any.whl\n"
-                         f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb\n", result.stdout)
+                         f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb\n", result.stdout)
         self.assertTrue(check_files_exist(result.stdout))
 
     def test_pack_python_when_packaging_all_and_no_output_dir_specified(self):
         # Given
-        command = [f"{RESOURCE_ROOT}/pack_python", TEST_PROJECT_ROOT, "--all"]
+        command = [f"{RESOURCE_ROOT}/pack_python", TEST_PROJECT_ROOT, "--all", "-t", "arm64"]
 
         # When
         result = run_command(command)
@@ -94,7 +94,7 @@ class PackPythonTest(TestCase):
         self.assertEqual(0, result.returncode)
         self.assertEqual(f"{TEST_PROJECT_ROOT}/dist/test_project-1.0.0-py3-none-any.whl\n"
                          f"{TEST_PROJECT_ROOT}/dist/python3-test-project_1.0.0_all.deb\n"
-                         f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb\n", result.stdout)
+                         f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_arm64.deb\n", result.stdout)
         self.assertTrue(check_files_exist(result.stdout))
         self.assertTrue(
             check_file_is_in_deb(
@@ -134,7 +134,7 @@ class PackPythonTest(TestCase):
     def test_pack_python_when_packaging_all_and_relative_output_dir_specified(self):
         # Given
         output_dir = "tests/test_root/etc/dist" if os.path.exists("tests") else "test_root/etc/dist"
-        command = [f"{RESOURCE_ROOT}/pack_python", TEST_PROJECT_ROOT, "-o", output_dir, "--all"]
+        command = [f"{RESOURCE_ROOT}/pack_python", TEST_PROJECT_ROOT, "-o", output_dir, "--all", "-t", "amd64"]
 
         # When
         result = run_command(command)
@@ -143,13 +143,13 @@ class PackPythonTest(TestCase):
         self.assertEqual(0, result.returncode)
         self.assertEqual(f"{os.getcwd()}/{output_dir}/test_project-1.0.0-py3-none-any.whl\n"
                          f"{os.getcwd()}/{output_dir}/python3-test-project_1.0.0_all.deb\n"
-                         f"{os.getcwd()}/{output_dir}/test-project_1.0.0-1_all.deb\n", result.stdout)
+                         f"{os.getcwd()}/{output_dir}/test-project_1.0.0-1_amd64.deb\n", result.stdout)
         self.assertTrue(check_files_exist(result.stdout))
 
     def test_pack_python_when_packaging_all_and_absolute_output_dir_specified(self):
         # Given
         command = [f"{RESOURCE_ROOT}/pack_python", TEST_PROJECT_ROOT, "-o", f"{TEST_FILE_SYSTEM_ROOT}/etc/dist",
-                   "--all"]
+                   "--all", "-t", "amd64"]
 
         # When
         result = run_command(command)
@@ -158,7 +158,7 @@ class PackPythonTest(TestCase):
         self.assertEqual(0, result.returncode)
         self.assertEqual(f"{TEST_FILE_SYSTEM_ROOT}/etc/dist/test_project-1.0.0-py3-none-any.whl\n"
                          f"{TEST_FILE_SYSTEM_ROOT}/etc/dist/python3-test-project_1.0.0_all.deb\n"
-                         f"{TEST_FILE_SYSTEM_ROOT}/etc/dist/test-project_1.0.0-1_all.deb\n", result.stdout)
+                         f"{TEST_FILE_SYSTEM_ROOT}/etc/dist/test-project_1.0.0-1_amd64.deb\n", result.stdout)
         self.assertTrue(check_files_exist(result.stdout))
 
     def test_propagates_return_code_of_command(self):

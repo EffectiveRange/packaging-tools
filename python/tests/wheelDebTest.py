@@ -27,7 +27,7 @@ class WheelDebTest(TestCase):
 
     def test_wheel_deb_when_no_output_dir_specified(self):
         # Given
-        command = [f"{RESOURCE_ROOT}/pack_wheel-deb", TEST_PROJECT_ROOT]
+        command = [f"{RESOURCE_ROOT}/pack_wheel-deb", TEST_PROJECT_ROOT, "-t", "amd64"]
 
         # When
         result = run_command(command)
@@ -35,7 +35,7 @@ class WheelDebTest(TestCase):
         # Then
         self.assertEqual(0, result.returncode)
         self.assertEqual(
-            f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb\n", result.stdout
+            f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb\n", result.stdout
         )
         self.assertTrue(check_files_exist(result.stdout))
 
@@ -49,8 +49,8 @@ class WheelDebTest(TestCase):
         command = [
             f"{RESOURCE_ROOT}/pack_wheel-deb",
             TEST_PROJECT_ROOT,
-            "-o",
-            output_dir,
+            "-o", output_dir,
+            "-t", "arm64"
         ]
 
         # When
@@ -59,7 +59,7 @@ class WheelDebTest(TestCase):
         # Then
         self.assertEqual(0, result.returncode)
         self.assertEqual(
-            f"{os.getcwd()}/{output_dir}/test-project_1.0.0-1_all.deb\n", result.stdout
+            f"{os.getcwd()}/{output_dir}/test-project_1.0.0-1_arm64.deb\n", result.stdout
         )
         self.assertTrue(check_files_exist(result.stdout))
 
@@ -68,8 +68,8 @@ class WheelDebTest(TestCase):
         command = [
             f"{RESOURCE_ROOT}/pack_wheel-deb",
             TEST_PROJECT_ROOT,
-            "-o",
-            f"{TEST_FILE_SYSTEM_ROOT}/etc/dist",
+            "-o", f"{TEST_FILE_SYSTEM_ROOT}/etc/dist",
+            "-t", "amd64"
         ]
 
         # When
@@ -78,18 +78,72 @@ class WheelDebTest(TestCase):
         # Then
         self.assertEqual(0, result.returncode)
         self.assertEqual(
-            f"{TEST_FILE_SYSTEM_ROOT}/etc/dist/test-project_1.0.0-1_all.deb\n",
+            f"{TEST_FILE_SYSTEM_ROOT}/etc/dist/test-project_1.0.0-1_amd64.deb\n",
             result.stdout,
         )
         self.assertTrue(check_files_exist(result.stdout))
 
-    def test_wheel_deb_when_architecture_specified(self):
+    def test_wheel_deb_when_service_file_specified(self):
         # Given
         command = [
             f"{RESOURCE_ROOT}/pack_wheel-deb",
             TEST_PROJECT_ROOT,
-            "-A",
-            "any",
+            "-s", f"{TEST_PROJECT_ROOT}/service/test-project.service",
+            "-t", "amd64"
+        ]
+
+        # When
+        result = run_command(command)
+
+        # Then
+        self.assertEqual(0, result.returncode)
+        self.assertEqual(
+            f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb\n", result.stdout
+        )
+        self.assertTrue(check_files_exist(result.stdout))
+        self.assertTrue(
+            check_file_is_in_deb(
+                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb",
+                "lib/systemd/system/test-project.service",
+            )
+        )
+
+    def test_wheel_deb_when_multiple_service_files_specified(self):
+        # Given
+        command = [
+            f"{RESOURCE_ROOT}/pack_wheel-deb",
+            TEST_PROJECT_ROOT,
+            "-s", f"{TEST_PROJECT_ROOT}/service/test-project.1.service",
+            "-s", f"{TEST_PROJECT_ROOT}/service/test-project.2.service",
+            "-t", "arm64"
+        ]
+
+        # When
+        result = run_command(command)
+
+        # Then
+        self.assertEqual(0, result.returncode)
+        self.assertEqual(
+            f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_arm64.deb\n", result.stdout
+        )
+        self.assertTrue(check_files_exist(result.stdout))
+        self.assertTrue(
+            check_file_is_in_deb(
+                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_arm64.deb",
+                ["lib/systemd/system/1.service", "lib/systemd/system/2.service"],
+            )
+        )
+
+    def test_wheel_deb_when_lifecycle_files_specified(self):
+        # Given
+        command = [
+            f"{RESOURCE_ROOT}/pack_wheel-deb",
+            TEST_PROJECT_ROOT,
+            "--preinst-file", f"{TEST_PROJECT_ROOT}/scripts/test-project.preinst",
+            "--postinst-file", f"{TEST_PROJECT_ROOT}/scripts/test-project.postinst",
+            "--prerm-file", f"{TEST_PROJECT_ROOT}/scripts/test-project.prerm",
+            "--postrm-file", f"{TEST_PROJECT_ROOT}/scripts/test-project.postrm",
+            "-t", "amd64"
         ]
 
         # When
@@ -103,89 +157,7 @@ class WheelDebTest(TestCase):
         self.assertTrue(check_files_exist(result.stdout))
         self.assertTrue(
             check_files_matches_in_deb(
-                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb", [("control", "Architecture: amd64")],
-            )
-        )
-
-    def test_wheel_deb_when_service_file_specified(self):
-        # Given
-        command = [
-            f"{RESOURCE_ROOT}/pack_wheel-deb",
-            TEST_PROJECT_ROOT,
-            "-s",
-            f"{TEST_PROJECT_ROOT}/service/test-project.service",
-        ]
-
-        # When
-        result = run_command(command)
-
-        # Then
-        self.assertEqual(0, result.returncode)
-        self.assertEqual(
-            f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb\n", result.stdout
-        )
-        self.assertTrue(check_files_exist(result.stdout))
-        self.assertTrue(
-            check_file_is_in_deb(
-                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb",
-                "lib/systemd/system/test-project.service",
-            )
-        )
-
-    def test_wheel_deb_when_multiple_service_files_specified(self):
-        # Given
-        command = [
-            f"{RESOURCE_ROOT}/pack_wheel-deb",
-            TEST_PROJECT_ROOT,
-            "-s",
-            f"{TEST_PROJECT_ROOT}/service/test-project.1.service",
-            "-s",
-            f"{TEST_PROJECT_ROOT}/service/test-project.2.service",
-        ]
-
-        # When
-        result = run_command(command)
-
-        # Then
-        self.assertEqual(0, result.returncode)
-        self.assertEqual(
-            f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb\n", result.stdout
-        )
-        self.assertTrue(check_files_exist(result.stdout))
-        self.assertTrue(
-            check_file_is_in_deb(
-                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb",
-                ["lib/systemd/system/1.service", "lib/systemd/system/2.service"],
-            )
-        )
-
-    def test_wheel_deb_when_lifecycle_files_specified(self):
-        # Given
-        command = [
-            f"{RESOURCE_ROOT}/pack_wheel-deb",
-            TEST_PROJECT_ROOT,
-            "--preinst-file",
-            f"{TEST_PROJECT_ROOT}/scripts/test-project.preinst",
-            "--postinst-file",
-            f"{TEST_PROJECT_ROOT}/scripts/test-project.postinst",
-            "--prerm-file",
-            f"{TEST_PROJECT_ROOT}/scripts/test-project.prerm",
-            "--postrm-file",
-            f"{TEST_PROJECT_ROOT}/scripts/test-project.postrm",
-        ]
-
-        # When
-        result = run_command(command)
-
-        # Then
-        self.assertEqual(0, result.returncode)
-        self.assertEqual(
-            f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb\n", result.stdout
-        )
-        self.assertTrue(check_files_exist(result.stdout))
-        self.assertTrue(
-            check_files_matches_in_deb(
-                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb",
+                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_amd64.deb",
                 [
                     ("preinst", "installing test-project"),
                     ("postinst", "test-project installed"),
@@ -200,16 +172,12 @@ class WheelDebTest(TestCase):
         command = [
             f"{RESOURCE_ROOT}/pack_wheel-deb",
             TEST_PROJECT_ROOT,
-            "-s",
-            f"{TEST_PROJECT_ROOT}/service/test-project.service",
-            "--preinst-file",
-            f"{TEST_PROJECT_ROOT}/scripts/test-project.preinst",
-            "--postinst-file",
-            f"{TEST_PROJECT_ROOT}/scripts/test-project.postinst",
-            "--prerm-file",
-            f"{TEST_PROJECT_ROOT}/scripts/test-project.prerm",
-            "--postrm-file",
-            f"{TEST_PROJECT_ROOT}/scripts/test-project.postrm",
+            "-s", f"{TEST_PROJECT_ROOT}/service/test-project.service",
+            "--preinst-file", f"{TEST_PROJECT_ROOT}/scripts/test-project.preinst",
+            "--postinst-file", f"{TEST_PROJECT_ROOT}/scripts/test-project.postinst",
+            "--prerm-file", f"{TEST_PROJECT_ROOT}/scripts/test-project.prerm",
+            "--postrm-file", f"{TEST_PROJECT_ROOT}/scripts/test-project.postrm",
+            "-t", "arm64"
         ]
 
         # When
@@ -218,18 +186,18 @@ class WheelDebTest(TestCase):
         # Then
         self.assertEqual(0, result.returncode)
         self.assertEqual(
-            f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb\n", result.stdout
+            f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_arm64.deb\n", result.stdout
         )
         self.assertTrue(check_files_exist(result.stdout))
         self.assertTrue(
             check_file_is_in_deb(
-                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb",
+                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_arm64.deb",
                 "lib/systemd/system/test-project.service",
             )
         )
         self.assertTrue(
             check_files_matches_in_deb(
-                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_all.deb",
+                f"{TEST_PROJECT_ROOT}/dist/test-project_1.0.0-1_arm64.deb",
                 [
                     ("preinst", "installing test-project"),
                     ("postinst", "test-project installed"),
