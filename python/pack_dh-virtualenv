@@ -165,7 +165,7 @@ def _get_arguments() -> Namespace:
     parser.add_argument("-A", "--architecture", help="control file architecture", default="any")
     parser.add_argument("-S", "--shlibdeps", help="add dpkg-shlibdeps parameters to debian/rules")
     parser.add_argument("workspace_dir", help="workspace directory where setup.py is located")
-    return parser.parse_args()
+    return parser.parse_known_args()[0]
 
 
 if __name__ == "__main__":

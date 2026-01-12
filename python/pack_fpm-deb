@@ -80,7 +80,7 @@ def _get_arguments() -> Namespace:
     parser.add_argument("--prerm-file", help="prerm file path")
     parser.add_argument("--postrm-file", help="postrm file path")
     parser.add_argument("workspace_dir", help="workspace directory where setup.py is located")
-    return parser.parse_args()
+    return parser.parse_known_args()[0]
 
 
 if __name__ == "__main__":

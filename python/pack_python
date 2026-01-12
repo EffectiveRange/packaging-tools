@@ -124,7 +124,7 @@ def _get_arguments() -> Namespace:
     parser.add_argument("-o", "--output-dir", help="package output directory")
     parser.add_argument("-t", "--target", help="target architecture")
     parser.add_argument("workspace_dir", help="workspace directory where setup.py is located")
-    return parser.parse_args()
+    return parser.parse_known_args()[0]
 
 
 def _split_arguments(arg_string: str) -> list[str]:

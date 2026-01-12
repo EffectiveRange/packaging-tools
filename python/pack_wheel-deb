@@ -15,7 +15,7 @@ from typing import Generator
 sys.path.insert(0, dirname(abspath(__file__)))
 
 from pack_common import check_workspace, get_absolute_path, extract_package_name, extract_version, run_command, \
-    override_architecture
+    override_architecture, get_build_architecture
 
 
 def main() -> None:
@@ -30,17 +30,29 @@ def main() -> None:
     if arguments.output_dir:
         output_dir = abspath(arguments.output_dir)
 
-    results = _create_sources(arguments, workspace_dir, output_dir)
+    target_arch = arguments.target
+
+    if not target_arch:
+        target_arch = get_build_architecture()
+
+    results = _create_sources(arguments, workspace_dir, output_dir, target_arch)
 
     build_dir = f"{output_dir}/{next(results)}"
+    debian_dir = f"{build_dir}/debian"
+    package_name = extract_package_name(workspace_dir)
 
-    results = _build_package(arguments, workspace_dir, build_dir)
+    all_arch_package = next(_build_all_arch_package(arguments, workspace_dir, build_dir, debian_dir, package_name))
+    target_arch_package = next(_build_target_arch_package(debian_dir, package_name, target_arch, all_arch_package))
 
-    for result in results:
-        print(f"{output_dir}/{result}")
+    package_path = f"{debian_dir}/{package_name}/{target_arch_package}"
+    target_path = f"{output_dir}/{target_arch_package}"
+    shutil.move(package_path, target_path)
+
+    print(target_path)
 
 
-def _create_sources(arguments: Namespace, workspace_dir: str, output_dir: str) -> Generator[str, None, None]:
+def _create_sources(arguments: Namespace, workspace_dir: str, output_dir: str, target_arch: str) -> Generator[
+    str, None, None]:
     package_name = extract_package_name(workspace_dir)
 
     command_arguments = [
@@ -59,7 +71,7 @@ def _create_sources(arguments: Namespace, workspace_dir: str, output_dir: str) -
         command_arguments.append("--with-dh-systemd")
 
     if shutil.which("dpkgdeps"):
-        depends_command = f"dpkgdeps --arch {arguments.target} --debdeps {workspace_dir}".split()
+        depends_command = f"dpkgdeps --arch {target_arch} --debdeps {workspace_dir}".split()
         if depends := subprocess.check_output(depends_command).decode("utf-8").strip():
             command_arguments.append(f"--depends3 {depends}")
 
@@ -119,11 +131,8 @@ def _setup_lifecycle_script(script_path: str, content: str) -> None:
             file.write(existing_content)
 
 
-def _build_package(arguments: Namespace, workspace_dir: str, build_dir: str) -> Generator[str, None, None]:
-    debian_dir = f"{build_dir}/debian"
-
-    override_architecture(arguments.architecture, debian_dir)
-
+def _build_all_arch_package(arguments: Namespace, workspace_dir: str, build_dir: str, debian_dir: str,
+                            package_name: str) -> Generator[str, None, None]:
     if services := arguments.service_file:
         for service in services:
             service_file = get_absolute_path(service, workspace_dir)
@@ -148,13 +157,25 @@ def _build_package(arguments: Namespace, workspace_dir: str, build_dir: str) -> 
             for file in glob.glob(path):
                 shutil.copy(file, debian_dir)
 
-    package_name = extract_package_name(workspace_dir)
     _setup_rules(build_dir, package_name, arguments.service_file)
     _setup_lifecycle_scripts(build_dir, package_name, arguments.python_bin)
 
     command = ["dpkg-buildpackage", "-rfakeroot", "-us", "-uc", "-ui", "-b"]
 
     return run_command(build_dir, command, r".*'\.\./(.+\.deb)'")
+
+
+def _build_target_arch_package(debian_dir: str, package_name: str,
+                               target_arch: str, all_arch_package: str) -> Generator[str, None, None]:
+    target_dir = f"{debian_dir}/{package_name}"
+
+    override_architecture(target_arch, f"{target_dir}/DEBIAN")
+
+    target_arch_package = all_arch_package.replace("_all.deb", f"_{target_arch}.deb")
+
+    command = ["dpkg-deb", "--root-owner-group", "--build", target_dir, target_arch_package]
+
+    return run_command(target_dir, command, r".*'(.+\.deb)'")
 
 
 def _get_rules(package_name: str) -> str:
@@ -256,7 +277,6 @@ def _get_arguments() -> Namespace:
     parser.add_argument("--postrm-file", help="postrm file path")
     parser.add_argument("-e", "--extra-files", action="append",
                         help="add extra files into the debian folder before build")
-    parser.add_argument("-A", "--architecture", help="control file architecture", default="all")
     parser.add_argument("workspace_dir", help="workspace directory where setup.py is located")
     return parser.parse_known_args()[0]
 
