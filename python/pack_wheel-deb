@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, Namespace
+from os import remove
 from os.path import abspath, dirname
 from typing import Generator
 
@@ -42,6 +43,8 @@ def main() -> None:
     package_name = extract_package_name(workspace_dir)
 
     all_arch_package = next(_build_all_arch_package(arguments, workspace_dir, build_dir, debian_dir, package_name))
+    remove(f"{output_dir}/{all_arch_package}")
+
     target_arch_package = next(_build_target_arch_package(debian_dir, package_name, target_arch, all_arch_package))
 
     package_path = f"{debian_dir}/{package_name}/{target_arch_package}"
