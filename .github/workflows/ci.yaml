@@ -132,6 +132,6 @@ jobs:
     uses: EffectiveRange/ci-workflows/.github/workflows/repository-dispatch.yaml@v1_repodispatch
     secrets: inherit
     with:
-      downstream_repo: devc-effectiverange-baseoverlay
+      downstream_repo: devc-effectiverange-baseoverlay,devc-erdev-vscodeext
       event_type: ${{ github.repository }}
       version: ${{ github.ref_name }}    
