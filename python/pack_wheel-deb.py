@@ -54,8 +54,8 @@ def main() -> None:
     print(target_path)
 
 
-def _create_sources(arguments: Namespace, workspace_dir: str, output_dir: str, target_arch: str) -> Generator[
-    str, None, None]:
+def _create_sources(arguments: Namespace, workspace_dir: str, output_dir: str, target_arch: str) -> \
+        (Generator[str, None, None]):
     package_name = extract_package_name(workspace_dir)
 
     command_arguments = [
@@ -214,13 +214,15 @@ def _get_post_install_script(package_name: str, version: str) -> str:
         echo "Virtualenv for {package_name} already exists, skipping creation."
     fi
     
-    /opt/effective-range/venvs/{package_name}/bin/pip install --upgrade /opt/effective-range/dist/{package_name}/*{version}*.whl
-    for bin in $(find /opt/effective-range/venvs/{package_name}/bin/ -type f -name er-\*)
+    /opt/effective-range/venvs/{package_name}/bin/pip install --upgrade \
+    /opt/effective-range/dist/{package_name}/*{version}*.whl
+    for bin in $(find /opt/effective-range/venvs/{package_name}/bin/ -type f)
     do
         ln -vfs $bin /usr/local/bin/$(basename $bin)
     done
     mkdir -p /etc/effective-range/{package_name}/
-    ln -vfs /opt/effective-range/venvs/{package_name}/config/{package_name}.conf.default /etc/effective-range/{package_name}/{package_name}.conf.default
+    ln -vfs /opt/effective-range/venvs/{package_name}/config/{package_name}.conf.default \
+    /etc/effective-range/{package_name}/{package_name}.conf.default
 }}
 
 if [ "${{1}}" = "configure" -a -z "${{2}}" ] || \
@@ -251,7 +253,7 @@ def _get_pre_remove_script(package_name: str) -> str:
 if [ "${{1}}" = "remove" -a -z "${{2}}" ]
 then
     # Fresh remove
-    for bin in $(find /opt/effective-range/venvs/{package_name}/bin/ -type f -name er-\*)
+    for bin in $(find /opt/effective-range/venvs/{package_name}/bin/ -type f)
     do
         rm -vf /usr/local/bin/$(basename $bin)
     done

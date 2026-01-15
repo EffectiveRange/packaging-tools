@@ -4,10 +4,7 @@
 apt-get update
 
 # Install python3 and pip
-apt-get install -y --no-install-recommends python3-all python3-pip python3-virtualenv
-
-# Install wheel
-pip3 install wheel
+apt-get install -y --no-install-recommends python3-all python3-pip python3-virtualenv python3-wheel python3-build
 
 # Install fpm
 apt-get install -y --no-install-recommends ruby ruby-dev rubygems build-essential

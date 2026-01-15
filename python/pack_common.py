@@ -6,6 +6,7 @@ import re
 import sys
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
+from enum import Enum
 from fileinput import FileInput
 from functools import partial
 from os.path import exists
@@ -13,14 +14,28 @@ from subprocess import PIPE, Popen
 from typing import Generator, Union, Optional
 
 
+class ProjectType(Enum):
+    PYPROJECT_TOML = "pyproject.toml"
+    SETUP_PY = "setup.py"
+
+
 def check_workspace(workspace_dir: str) -> None:
     if not exists(workspace_dir):
         print(f"Workspace directory {workspace_dir} does not exist", file=sys.stderr)
         exit(1)
 
-    if not exists(f"{workspace_dir}/setup.py"):
-        print(f"There is no setup.py in the workspace directory {workspace_dir}", file=sys.stderr)
-        exit(2)
+
+def get_project_type(workspace_dir: str) -> ProjectType:
+    if exists(f"{workspace_dir}/pyproject.toml"):
+        print(f"Found pyproject.toml in the workspace directory {workspace_dir}", file=sys.stderr)
+        return ProjectType.PYPROJECT_TOML
+
+    if exists(f"{workspace_dir}/setup.py"):
+        print(f"Found setup.py in the workspace directory {workspace_dir}", file=sys.stderr)
+        return ProjectType.SETUP_PY
+
+    print(f"There is no setup.py or pyproject.toml in the workspace directory {workspace_dir}", file=sys.stderr)
+    exit(2)
 
 
 def get_build_architecture() -> str:

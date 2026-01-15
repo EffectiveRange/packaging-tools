@@ -143,7 +143,7 @@ def _add_shlidbeps_parameters(arguments: Namespace, debian_dir: str) -> None:
 
 def _set_no_automatic_dbgsym(debian_dir: str) -> None:
     with open(f"{debian_dir}/rules", "a") as file:
-        file.write(f"""override_dh_strip:
+        file.write("""override_dh_strip:
 \tdh_strip --no-automatic-dbgsym
 """)
 

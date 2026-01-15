@@ -1,0 +1,21 @@
+[project]
+name = "test-project"
+version = "1.0.0"
+description = "Test project"
+readme = "README.md"
+authors = [
+    { name = "Ferenc Nandor Janky & Attila Gombos", email = "info@effective-range.com" }
+]
+dependencies = [
+    "python-context-logger @ git+https://github.com/EffectiveRange/python-context-logger.git@latest"
+]
+
+[project.urls]
+Homepage = "https://github.com/EffectiveRange/test-project"
+
+[project.scripts]
+test-project = "test_module:main"
+
+[tool.setuptools]
+packages = ["test_module"]
+include-package-data = true
