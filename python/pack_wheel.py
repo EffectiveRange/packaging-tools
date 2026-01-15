@@ -10,7 +10,7 @@ from os.path import abspath, dirname
 
 sys.path.insert(0, dirname(abspath(__file__)))
 
-from pack_common import check_workspace, run_command
+from pack_common import check_workspace, run_command, get_project_type, ProjectType
 
 
 def main() -> None:
@@ -20,24 +20,32 @@ def main() -> None:
 
     check_workspace(workspace_dir)
 
-    command = [arguments.python_bin, "setup.py", "bdist_wheel"]
+    project_type = get_project_type(workspace_dir)
+
+    if project_type == ProjectType.PYPROJECT_TOML:
+        command = [arguments.python_bin, "-m", "build", "--wheel"]
+        matcher = r"Successfully built (.+\.whl)"
+    else:
+        command = [arguments.python_bin, "setup.py", "bdist_wheel"]
+        matcher = r".*'(.+\.whl)'"
 
     output_dir = f"{workspace_dir}/dist"
 
     if arguments.output_dir:
         output_dir = abspath(arguments.output_dir)
-        command.extend(["--dist-dir", output_dir])
+        if project_type == ProjectType.PYPROJECT_TOML:
+            command.extend(["--outdir", output_dir])
+        else:
+            command.extend(["--dist-dir", output_dir])
 
-    results = run_command(workspace_dir, command, r".*'(.+\.whl)'")
+    result = next(run_command(workspace_dir, command, matcher))
 
-    for result in results:
+    if project_type == ProjectType.PYPROJECT_TOML:
+        result = f"{output_dir}/{result}" if arguments.output_dir else f"{output_dir}/{result}"
+    else:
         if not result.startswith("/"):
-            result = (
-                f"{output_dir}/{result}"
-                if arguments.output_dir
-                else f"{workspace_dir}/{result}"
-            )
-        print(result)
+            result = f"{output_dir}/{result}" if arguments.output_dir else f"{workspace_dir}/{result}"
+    print(result)
 
 
 def _get_arguments() -> Namespace:

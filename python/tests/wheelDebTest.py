@@ -12,7 +12,7 @@ from utils import (
     RESOURCE_ROOT,
     run_command,
     check_files_matches_in_deb,
-    check_files_exist,
+    check_files_exist, delete_file,
 )
 
 
@@ -20,14 +20,13 @@ class WheelDebTest(TestCase):
 
     def setUp(self):
         delete_directory(TEST_FILE_SYSTEM_ROOT)
-        shutil.copytree(
-            f"{TEST_RESOURCE_ROOT}/test-project", TEST_PROJECT_ROOT, dirs_exist_ok=True
-        )
+        shutil.copytree(f"{TEST_RESOURCE_ROOT}/test-project", TEST_PROJECT_ROOT, dirs_exist_ok=True)
+        delete_file(f"{TEST_PROJECT_ROOT}/pyproject.toml")
         print()
 
     def test_wheel_deb_when_no_output_dir_specified(self):
         # Given
-        command = [f"{RESOURCE_ROOT}/pack_wheel-deb", TEST_PROJECT_ROOT, "-t", "amd64"]
+        command = [f"{RESOURCE_ROOT}/pack_wheel-deb.py", TEST_PROJECT_ROOT, "-t", "amd64"]
 
         # When
         result = run_command(command)
@@ -48,7 +47,7 @@ class WheelDebTest(TestCase):
             else "test_root/etc/dist"
         )
         command = [
-            f"{RESOURCE_ROOT}/pack_wheel-deb",
+            f"{RESOURCE_ROOT}/pack_wheel-deb.py",
             TEST_PROJECT_ROOT,
             "-o", output_dir,
             "-t", "arm64"
@@ -67,7 +66,7 @@ class WheelDebTest(TestCase):
     def test_wheel_deb_when_absolute_output_dir_specified(self):
         # Given
         command = [
-            f"{RESOURCE_ROOT}/pack_wheel-deb",
+            f"{RESOURCE_ROOT}/pack_wheel-deb.py",
             TEST_PROJECT_ROOT,
             "-o", f"{TEST_FILE_SYSTEM_ROOT}/etc/dist",
             "-t", "amd64"
@@ -87,7 +86,7 @@ class WheelDebTest(TestCase):
     def test_wheel_deb_when_service_file_specified(self):
         # Given
         command = [
-            f"{RESOURCE_ROOT}/pack_wheel-deb",
+            f"{RESOURCE_ROOT}/pack_wheel-deb.py",
             TEST_PROJECT_ROOT,
             "-s", f"{TEST_PROJECT_ROOT}/service/test-project.service",
             "-t", "amd64"
@@ -112,7 +111,7 @@ class WheelDebTest(TestCase):
     def test_wheel_deb_when_multiple_service_files_specified(self):
         # Given
         command = [
-            f"{RESOURCE_ROOT}/pack_wheel-deb",
+            f"{RESOURCE_ROOT}/pack_wheel-deb.py",
             TEST_PROJECT_ROOT,
             "-s", f"{TEST_PROJECT_ROOT}/service/test-project.1.service",
             "-s", f"{TEST_PROJECT_ROOT}/service/test-project.2.service",
@@ -138,7 +137,7 @@ class WheelDebTest(TestCase):
     def test_wheel_deb_when_lifecycle_files_specified(self):
         # Given
         command = [
-            f"{RESOURCE_ROOT}/pack_wheel-deb",
+            f"{RESOURCE_ROOT}/pack_wheel-deb.py",
             TEST_PROJECT_ROOT,
             "--preinst-file", f"{TEST_PROJECT_ROOT}/scripts/test-project.preinst",
             "--postinst-file", f"{TEST_PROJECT_ROOT}/scripts/test-project.postinst",
@@ -171,7 +170,7 @@ class WheelDebTest(TestCase):
     def test_wheel_deb_when_service_and_lifecycle_files_specified(self):
         # Given
         command = [
-            f"{RESOURCE_ROOT}/pack_wheel-deb",
+            f"{RESOURCE_ROOT}/pack_wheel-deb.py",
             TEST_PROJECT_ROOT,
             "-s", f"{TEST_PROJECT_ROOT}/service/test-project.service",
             "--preinst-file", f"{TEST_PROJECT_ROOT}/scripts/test-project.preinst",
@@ -211,7 +210,7 @@ class WheelDebTest(TestCase):
     def test_propagates_return_code_of_command(self):
         # Given
         command = [
-            f"{RESOURCE_ROOT}/pack_wheel-deb",
+            f"{RESOURCE_ROOT}/pack_wheel-deb.py",
             TEST_PROJECT_ROOT,
             "-p",
             "/invalid/path",

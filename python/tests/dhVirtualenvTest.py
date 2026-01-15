@@ -10,6 +10,7 @@ from utils import (
     TEST_RESOURCE_ROOT,
     TEST_FILE_SYSTEM_ROOT,
     delete_directory,
+    delete_file,
     check_file_is_in_deb,
     RESOURCE_ROOT,
     run_command,
@@ -23,14 +24,13 @@ class DhVirtualenvTest(TestCase):
 
     def setUp(self):
         delete_directory(TEST_FILE_SYSTEM_ROOT)
-        shutil.copytree(
-            f"{TEST_RESOURCE_ROOT}/test-project", TEST_PROJECT_ROOT, dirs_exist_ok=True
-        )
+        shutil.copytree(f"{TEST_RESOURCE_ROOT}/test-project", TEST_PROJECT_ROOT, dirs_exist_ok=True)
+        delete_file(f"{TEST_PROJECT_ROOT}/pyproject.toml")
         print()
 
     def test_dh_virtualenv_when_no_output_dir_specified(self):
         # Given
-        command = [f"{RESOURCE_ROOT}/pack_dh-virtualenv", TEST_PROJECT_ROOT]
+        command = [f"{RESOURCE_ROOT}/pack_dh-virtualenv.py", TEST_PROJECT_ROOT]
 
         # When
         result = run_command(command)
@@ -50,7 +50,7 @@ class DhVirtualenvTest(TestCase):
             else "test_root/etc/dist"
         )
         command = [
-            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
+            f"{RESOURCE_ROOT}/pack_dh-virtualenv.py",
             TEST_PROJECT_ROOT,
             "-o",
             output_dir,
@@ -69,7 +69,7 @@ class DhVirtualenvTest(TestCase):
     def test_dh_virtualenv_when_absolute_output_dir_specified(self):
         # Given
         command = [
-            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
+            f"{RESOURCE_ROOT}/pack_dh-virtualenv.py",
             TEST_PROJECT_ROOT,
             "-o",
             f"{TEST_FILE_SYSTEM_ROOT}/etc/dist",
@@ -89,7 +89,7 @@ class DhVirtualenvTest(TestCase):
     def test_dh_virtualenv_when_dh_virtualenv_arguments_specified(self):
         # Given
         command = [
-            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
+            f"{RESOURCE_ROOT}/pack_dh-virtualenv.py",
             TEST_PROJECT_ROOT,
             "-d=--use-system-packages",
         ]
@@ -108,7 +108,7 @@ class DhVirtualenvTest(TestCase):
     def test_dh_virtualenv_when_architecture_specified(self):
         # Given
         command = [
-            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
+            f"{RESOURCE_ROOT}/pack_dh-virtualenv.py",
             TEST_PROJECT_ROOT,
             "-A",
             "all",
@@ -132,7 +132,7 @@ class DhVirtualenvTest(TestCase):
     def test_dh_virtualenv_when_shlibdeps_parameters_specified(self):
         # Given
         command = [
-            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
+            f"{RESOURCE_ROOT}/pack_dh-virtualenv.py",
             TEST_PROJECT_ROOT,
             "-S",
             "\"-ldebian/test-project/opt/venvs/test-project/lib\"",
@@ -152,7 +152,7 @@ class DhVirtualenvTest(TestCase):
     def test_dh_virtualenv_when_service_file_specified(self):
         # Given
         command = [
-            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
+            f"{RESOURCE_ROOT}/pack_dh-virtualenv.py",
             TEST_PROJECT_ROOT,
             "-s",
             f"{TEST_PROJECT_ROOT}/service/test-project.service",
@@ -177,7 +177,7 @@ class DhVirtualenvTest(TestCase):
     def test_dh_virtualenv_when_lifecycle_files_specified(self):
         # Given
         command = [
-            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
+            f"{RESOURCE_ROOT}/pack_dh-virtualenv.py",
             TEST_PROJECT_ROOT,
             "--preinst-file",
             f"{TEST_PROJECT_ROOT}/scripts/test-project.preinst",
@@ -213,7 +213,7 @@ class DhVirtualenvTest(TestCase):
     def test_dh_virtualenv_when_service_and_lifecycle_files_specified(self):
         # Given
         command = [
-            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
+            f"{RESOURCE_ROOT}/pack_dh-virtualenv.py",
             TEST_PROJECT_ROOT,
             "-s",
             f"{TEST_PROJECT_ROOT}/service/test-project.service",
@@ -257,7 +257,7 @@ class DhVirtualenvTest(TestCase):
     def test_dh_virtualenv_when_extra_files_specified(self):
         # Given
         command = [
-            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
+            f"{RESOURCE_ROOT}/pack_dh-virtualenv.py",
             TEST_PROJECT_ROOT,
             "-e",
             f"{TEST_PROJECT_ROOT}/scripts/test-project.preinst",
@@ -293,7 +293,7 @@ class DhVirtualenvTest(TestCase):
     def test_dh_virtualenv_when_extra_files_specified_with_wildcard(self):
         # Given
         command = [
-            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
+            f"{RESOURCE_ROOT}/pack_dh-virtualenv.py",
             TEST_PROJECT_ROOT,
             "-e",
             f"{TEST_PROJECT_ROOT}/scripts/*",
@@ -323,7 +323,7 @@ class DhVirtualenvTest(TestCase):
     def test_propagates_return_code_of_command(self):
         # Given
         command = [
-            f"{RESOURCE_ROOT}/pack_dh-virtualenv",
+            f"{RESOURCE_ROOT}/pack_dh-virtualenv.py",
             TEST_PROJECT_ROOT,
             "-p",
             "/invalid/path",

@@ -4,7 +4,7 @@ import unittest
 from unittest import TestCase
 
 from utils import TEST_PROJECT_ROOT, RESOURCE_ROOT, TEST_RESOURCE_ROOT, delete_directory, TEST_FILE_SYSTEM_ROOT, \
-    run_command, create_file, check_files_exist, check_files_matches_in_deb, check_file_is_in_deb
+    run_command, create_file, check_files_exist, check_files_matches_in_deb, check_file_is_in_deb, delete_file
 
 
 class PackPythonTest(TestCase):
@@ -12,11 +12,12 @@ class PackPythonTest(TestCase):
     def setUp(self):
         delete_directory(TEST_FILE_SYSTEM_ROOT)
         shutil.copytree(f"{TEST_RESOURCE_ROOT}/test-project", TEST_PROJECT_ROOT, dirs_exist_ok=True)
+        delete_file(f"{TEST_PROJECT_ROOT}/pyproject.toml")
         print()
 
     def test_pack_python_when_packaging_default(self):
         # Given
-        command = [f"{RESOURCE_ROOT}/pack_python", TEST_PROJECT_ROOT]
+        command = [f"{RESOURCE_ROOT}/pack_python.py", TEST_PROJECT_ROOT]
 
         # When
         result = run_command(command)
@@ -34,7 +35,7 @@ class PackPythonTest(TestCase):
                     "wheel-deb = -t arm64\n"
                     "service = service/test-project.1.service service/test-project.2.service")
 
-        command = [f"{RESOURCE_ROOT}/pack_python", TEST_PROJECT_ROOT, "-c", f"{TEST_FILE_SYSTEM_ROOT}/tmp/setup.cfg"]
+        command = [f"{RESOURCE_ROOT}/pack_python.py", TEST_PROJECT_ROOT, "-c", f"{TEST_FILE_SYSTEM_ROOT}/tmp/setup.cfg"]
 
         # When
         result = run_command(command)
@@ -52,7 +53,7 @@ class PackPythonTest(TestCase):
 
     def test_pack_python_when_packaging_specified(self):
         # Given
-        command = [f"{RESOURCE_ROOT}/pack_python", TEST_PROJECT_ROOT, "-s", "wheel fpm-deb"]
+        command = [f"{RESOURCE_ROOT}/pack_python.py", TEST_PROJECT_ROOT, "-s", "wheel fpm-deb"]
 
         # When
         result = run_command(command)
@@ -70,7 +71,7 @@ class PackPythonTest(TestCase):
                     "default = wheel-deb\n"
                     "wheel-deb = -A amd64")
 
-        command = [f"{RESOURCE_ROOT}/pack_python", TEST_PROJECT_ROOT,
+        command = [f"{RESOURCE_ROOT}/pack_python.py", TEST_PROJECT_ROOT,
                    "-c", f"{TEST_FILE_SYSTEM_ROOT}/tmp/setup.cfg",
                    "-s", "wheel wheel-deb"]
 
@@ -85,7 +86,7 @@ class PackPythonTest(TestCase):
 
     def test_pack_python_when_packaging_all_and_no_output_dir_specified(self):
         # Given
-        command = [f"{RESOURCE_ROOT}/pack_python", TEST_PROJECT_ROOT, "--all", "-t", "arm64"]
+        command = [f"{RESOURCE_ROOT}/pack_python.py", TEST_PROJECT_ROOT, "--all", "-t", "arm64"]
 
         # When
         result = run_command(command)
@@ -134,7 +135,7 @@ class PackPythonTest(TestCase):
     def test_pack_python_when_packaging_all_and_relative_output_dir_specified(self):
         # Given
         output_dir = "tests/test_root/etc/dist" if os.path.exists("tests") else "test_root/etc/dist"
-        command = [f"{RESOURCE_ROOT}/pack_python", TEST_PROJECT_ROOT, "-o", output_dir, "--all", "-t", "amd64"]
+        command = [f"{RESOURCE_ROOT}/pack_python.py", TEST_PROJECT_ROOT, "-o", output_dir, "--all", "-t", "amd64"]
 
         # When
         result = run_command(command)
@@ -148,7 +149,7 @@ class PackPythonTest(TestCase):
 
     def test_pack_python_when_packaging_all_and_absolute_output_dir_specified(self):
         # Given
-        command = [f"{RESOURCE_ROOT}/pack_python", TEST_PROJECT_ROOT, "-o", f"{TEST_FILE_SYSTEM_ROOT}/etc/dist",
+        command = [f"{RESOURCE_ROOT}/pack_python.py", TEST_PROJECT_ROOT, "-o", f"{TEST_FILE_SYSTEM_ROOT}/etc/dist",
                    "--all", "-t", "amd64"]
 
         # When
@@ -163,7 +164,7 @@ class PackPythonTest(TestCase):
 
     def test_propagates_return_code_of_command(self):
         # Given
-        command = [f"{RESOURCE_ROOT}/pack_python", TEST_PROJECT_ROOT, "-o", f"{TEST_FILE_SYSTEM_ROOT}/etc/dist",
+        command = [f"{RESOURCE_ROOT}/pack_python.py", TEST_PROJECT_ROOT, "-o", f"{TEST_FILE_SYSTEM_ROOT}/etc/dist",
                    "--all", "-p", "/invalid/path"]
 
         # When

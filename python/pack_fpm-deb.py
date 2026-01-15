@@ -11,7 +11,7 @@ from os.path import abspath, dirname
 
 sys.path.insert(0, dirname(abspath(__file__)))
 
-from pack_common import check_workspace, run_command, get_absolute_path
+from pack_common import check_workspace, run_command, get_absolute_path, get_project_type
 
 
 def main() -> None:
@@ -20,6 +20,8 @@ def main() -> None:
     workspace_dir = abspath(arguments.workspace_dir)
 
     check_workspace(workspace_dir)
+
+    project_type = get_project_type(workspace_dir)
 
     fpm_arguments = [
         "-s",
@@ -60,7 +62,7 @@ def main() -> None:
     if post_remove := arguments.postrm_file:
         fpm_arguments.extend(["--after-remove", post_remove])
 
-    command = ["fpm", *fpm_arguments, "setup.py"]
+    command = ["fpm", *fpm_arguments, project_type.value]
 
     results = run_command(workspace_dir, command, r'.*"(.+\.deb)"')
 
