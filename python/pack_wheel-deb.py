@@ -214,7 +214,7 @@ def _get_post_install_script(package_name: str, version: str) -> str:
         echo "Virtualenv for {package_name} already exists, skipping creation."
     fi
     
-    /opt/effective-range/venvs/{package_name}/bin/pip install --force-reinstall \
+    /opt/effective-range/venvs/{package_name}/bin/pip install --force-reinstall --no-cache-dir \
     /opt/effective-range/dist/{package_name}/*{version}*.whl
     for bin in $(find /opt/effective-range/venvs/{package_name}/bin/ -type f)
     do
@@ -257,7 +257,8 @@ then
     do
         rm -vf /usr/local/bin/$(basename $bin)
     done
-    rm -vf  /opt/effective-range/{package_name}/config
+    rm -rf /opt/effective-range/venvs/{package_name}
+    rm -vf /opt/effective-range/{package_name}/config
 elif [ "${{1}}" = "upgrade" ]
 then
     # Executed before the old version is removed upon upgrade.
