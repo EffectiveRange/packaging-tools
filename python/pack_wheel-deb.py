@@ -77,7 +77,7 @@ def _create_sources(arguments: Namespace, workspace_dir: str, output_dir: str, t
         depends_command = f"dpkgdeps --arch {target_arch} --debdeps {workspace_dir}".split()
         if depends := subprocess.check_output(depends_command).decode("utf-8").strip():
             all_deps = ','.join((depends, "python3-venv"))
-            command_arguments.append(f"--depends3 {all_deps}")
+            command_arguments.append(f'--depends3 "{all_deps}"')
 
     command = [
         arguments.python_bin,
