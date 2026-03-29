@@ -58,8 +58,8 @@ def main() -> None:
 
 def _propagate_config_files(build_dir: str, debian_dir: str, package_name: str) -> None:
     source_cfg_dir = f"{build_dir}/config"
-    if os.path.exists(source_cfg_dir):
-        config_files_dir = f"{debian_dir}/{package_name}/etc/{package_name}"
+    if os.path.isdir(source_cfg_dir):
+        config_files_dir = f"{debian_dir}/{package_name}/etc/effective-range/{package_name}"
         os.makedirs(config_files_dir, exist_ok=True)
         for item in os.listdir(source_cfg_dir):
             source = f"{source_cfg_dir}/{item}"
@@ -236,9 +236,6 @@ def _get_post_install_script(package_name: str, version: str) -> str:
     do
         ln -vfs $bin /usr/local/bin/$(basename $bin)
     done
-    mkdir -p /etc/effective-range/{package_name}/
-    ln -vfs /opt/effective-range/venvs/{package_name}/config/{package_name}.conf.default \
-    /etc/effective-range/{package_name}/{package_name}.conf.default
 }}
 
 if [ "${{1}}" = "configure" -a -z "${{2}}" ] || \
