@@ -5,6 +5,7 @@
 # SPDX-License-Identifier: MIT
 
 import glob
+import os
 import shutil
 import subprocess
 import sys
@@ -45,6 +46,7 @@ def main() -> None:
     all_arch_package = next(_build_all_arch_package(arguments, workspace_dir, build_dir, debian_dir, package_name))
     remove(f"{output_dir}/{all_arch_package}")
 
+    _propagate_config_files(build_dir, debian_dir, package_name)
     target_arch_package = next(_build_target_arch_package(debian_dir, package_name, target_arch, all_arch_package))
 
     package_path = f"{debian_dir}/{package_name}/{target_arch_package}"
@@ -52,6 +54,20 @@ def main() -> None:
     shutil.move(package_path, target_path)
 
     print(target_path)
+
+
+def _propagate_config_files(build_dir: str, debian_dir: str, package_name: str) -> None:
+    source_cfg_dir = f"{build_dir}/config"
+    if os.path.exists(source_cfg_dir):
+        config_files_dir = f"{debian_dir}/{package_name}/etc/{package_name}"
+        os.makedirs(config_files_dir, exist_ok=True)
+        for item in os.listdir(source_cfg_dir):
+            source = f"{source_cfg_dir}/{item}"
+            destination = f"{config_files_dir}/{item}"
+            if os.path.isdir(source):
+                shutil.copytree(source, destination)
+            else:
+                shutil.copy(source, destination)
 
 
 def _create_sources(arguments: Namespace, workspace_dir: str, output_dir: str, target_arch: str) -> \
