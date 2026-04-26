@@ -230,7 +230,8 @@ def _get_post_install_script(package_name: str, version: str) -> str:
         echo "Virtualenv for {package_name} already exists, skipping creation."
     fi
     
-    /opt/effective-range/venvs/{package_name}/bin/pip install --upgrade --no-build-isolation --resume-retries \
+    /opt/effective-range/venvs/{package_name}/bin/pip install --upgrade --no-build-isolation \
+    --retries 10 --resume-retries 5 --timeout 30 \
     /opt/effective-range/dist/{package_name}/*{version}*.whl
     for bin in $(find /opt/effective-range/venvs/{package_name}/bin/ -type f)
     do
