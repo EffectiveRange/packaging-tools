@@ -231,7 +231,7 @@ def _get_post_install_script(package_name: str, version: str) -> str:
     fi
     
     /opt/effective-range/venvs/{package_name}/bin/pip install --upgrade --no-build-isolation \
-    --retries 10 --resume-retries 5 --timeout 30 \
+    --retries 10 --timeout 30 \
     /opt/effective-range/dist/{package_name}/*{version}*.whl
     for bin in $(find /opt/effective-range/venvs/{package_name}/bin/ -type f)
     do
